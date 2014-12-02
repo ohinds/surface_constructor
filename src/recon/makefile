@@ -28,10 +28,11 @@ export MEMLEAK = 0
 # directories
 export LIB_DEST_DIR = /usr/local/lib/
 export HDR_DEST_DIR = /usr/local/include/
-export LIB_DIR = /tmp/
+export LIB_DIR = $(PWD)/lib/
 export SRC_DIR = $(PWD)/src/
 export OBJ_DIR = $(PWD)/obj/
 export BIN_DIR = $(PWD)/bin/
+export VOL_DIR = $(PWD)/../vol/
 
 ################################ APPS ################################
 
@@ -39,6 +40,7 @@ export RM = /bin/rm -v
 export ECHO = /bin/echo
 export CC = /usr/bin/gcc
 export AR = /usr/bin/ar
+export LN = ln -sf
 export INSTALL=sudo /usr/bin/install
 export ROOTLN = sudo ln
 export LDCONFIG=/sbin/ldconfig
@@ -86,8 +88,8 @@ ifeq ($(OS),linux)
 endif
 
 
-export CINCL =  -I$(SRC_DIR)
-export CFLAGS = $(fPIC) -Wall -Werror $(MEMLEAK_FLAG) $(PROF_FLAG) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL)
+export CINCL =  -I$(SRC_DIR) -I$(VOL_DIR)/src
+export CFLAGS = $(fPIC) -Wall -Werror $(MEMLEAK_FLAG) $(PROF_FLAG) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL) -Wno-unused-but-set-variable -Wno-unused-result
 export LDFLAGS = $(PROF_FLAG) $(LIBVP)
 
 # bits of platform
@@ -146,6 +148,7 @@ ifeq ($(LIB_TYPE),shared)
 	@$(ECHO) '############################################'
 else  # static
 	$(AR) rcs $(LIB_DIR)/$(PROJECT).a.$(MAJOR_VER).$(MINOR_VER).$(RELEASE_VER) $(OBJ_DIR)/*.o
+	$(LN) $(LIB_DIR)/$(PROJECT).a.$(MAJOR_VER).$(MINOR_VER).$(RELEASE_VER) $(LIB_DIR)/$(PROJECT).a
 	@$(ECHO) '############################################'
 	@$(ECHO) 'make: built [$@.a.$(MAJOR_VER).$(MINOR_VER).$(RELEASE_VER)] successfully!'
 	@$(ECHO) '############################################'

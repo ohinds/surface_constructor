@@ -28,7 +28,7 @@ export MEMLEAK = 0
 # directories
 export LIB_DEST_DIR = /usr/local/lib/
 export HDR_DEST_DIR = /usr/local/include/
-export LIB_DIR = /tmp/
+export LIB_DIR = $(PWD)/lib/
 export SRC_DIR = $(PWD)/src/
 export OBJ_DIR = $(PWD)/obj/
 
@@ -38,6 +38,7 @@ export RM = /bin/rm -v
 export ECHO = /bin/echo
 export CC = /usr/bin/gcc
 export AR = /usr/bin/ar
+export LN = ln -sf
 export INSTALL=sudo /usr/bin/install
 export ROOTLN=sudo ln
 export LDCONFIG=/sbin/ldconfig
@@ -141,6 +142,7 @@ ifeq ($(LIB_TYPE),shared)
 	@$(ECHO) '############################################'
 else
 	$(AR) rcs $(LIB_DIR)/$(PROJECT).a.$(MAJOR_VER).$(MINOR_VER).$(RELEASE_VER) $(OBJ_DIR)/*.o
+	$(LN) $(LIB_DIR)/$(PROJECT).a.$(MAJOR_VER).$(MINOR_VER).$(RELEASE_VER) $(LIB_DIR)/$(PROJECT).a
 	@$(ECHO) '############################################'
 	@$(ECHO) 'make: built [$@.a.$(MAJOR_VER).$(MINOR_VER).$(RELEASE_VER)] successfully!'
 	@$(ECHO) '############################################'

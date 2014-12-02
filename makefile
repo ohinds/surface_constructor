@@ -18,13 +18,16 @@ export STRIP = 1
 export PROF = 0
 export MEMLEAK = 0
 
-# directories 
+# directories
 export DEST_DIR = /usr/local/bin/
 export BIN_DIR = $(PWD)/bin
 export SRC_DIR = $(PWD)/src
 export OBJ_DIR = $(PWD)/obj
 
-# whether image exporting should be compiled in 
+export VOL_DIR = $(SRC_DIR)/vol/
+export RECON_DIR = $(SRC_DIR)/recon/
+
+# whether image exporting should be compiled in
 # requires offscreen rendering support
 export IMG_EXPORT = 0
 
@@ -40,8 +43,8 @@ X_INCS = -I/usr/X11R6/include
 X_LIBS = -L/usr/X11R6/lib -lXext -lX11 -lXmu -lXxf86vm -L/usr/lib64 -L/usr/X11R6/lib64
 
 # library linking options
-SR_LIB_TYPE = shared
-VP_LIB_TYPE = shared
+SR_LIB_TYPE = static
+VP_LIB_TYPE = static
 
 
 # jpeg includes and libs
@@ -92,7 +95,7 @@ ifeq ($(OS),mac)
 	SR_LIB_TYPE = static
 endif
 ifeq ($(SR_LIB_TYPE),static)
-	LIBSR_LIB_DIR = /usr/local/lib
+	LIBSR_LIB_DIR = $(RECON_DIR)/lib
 	LIBSR = $(LIBSR_LIB_DIR)/libsr.a
 #	LIBSR = ../SurfaceReconstructionLibrary/obj/*.o
 else
@@ -106,7 +109,7 @@ ifeq ($(OS),mac)
 	VP_LIB_TYPE = static
 endif
 ifeq ($(VP_LIB_TYPE),static)
-	LIBVP_LIB_DIR = /usr/local/lib
+	LIBVP_LIB_DIR = $(VOL_DIR)/lib
 	LIBVP = $(LIBVP_LIB_DIR)/libvp.a
 #	LIBVP = ../VolumeProcessingLibrary/obj/*.o
 else
@@ -114,23 +117,23 @@ else
 endif
 
 # flags for the compiler and linker
-export CINCL =  -I$(SRC_DIR)
-export CFLAGS = -Werror -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(JPEG_INCS) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL) 
-export LDFLAGS = $(PROF_FLAG) $(MEMLEAK_FLAG) $(JPEG_LIBS) $(LIBSR) $(LIBVP) -lm -lgsl -lgslcblas -lz
+export CINCL =  -I$(SRC_DIR) -I$(VOL_DIR)/src -I$(VOL_DIR)/src/dicom -I$(RECON_DIR)/src
+export CFLAGS = -Werror -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(JPEG_INCS) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL) -Wno-unused-but-set-variable -Wno-unused-result
+export LDFLAGS = $(PROF_FLAG) $(MEMLEAK_FLAG) $(LIBSR) $(LIBVP)  $(JPEG_LIBS) -lm -lgsl -lgslcblas -lz
 
 # differences between mac and *nix
 ifeq ($(OS),mac)
 	CFLAGS += -DMAC
 	LDFLAGS += -framework OpenGL -framework GLUT -lobjc
 else
-	CFLAGS +=  $(GL_INCS) $(X_INCS) 
+	CFLAGS +=  $(GL_INCS) $(X_INCS)
 	LDFLAGS += $(GL_LIBS) $(X_LIBS)
 endif
 
 # specific flags for windows, these override earlier defs of cflags and ldflags
 ifeq ($(OS),win)
 #        export CFLAGS =  $(LIBSR) $(LIBVP) -Wall -Werror -I/usr/include $(PROF_FLAG) $(JPEG_INCS) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG)
-	export LDFLAGS = $(LIBVP) $(LIBSR) $(PROF_FLAG) $(MEMLEAK_FLAG) -L/usr/X11R6/lib -lglut -lGLU -lGL $(JPEG_LIBS) -lm -lgsl -lgslcblas -lz  -lopengl32 -lglu32 -lglut32 
+	export LDFLAGS = $(LIBVP) $(LIBSR) $(PROF_FLAG) $(MEMLEAK_FLAG) -L/usr/X11R6/lib -lglut -lGLU -lGL $(JPEG_LIBS) -lm -lgsl -lgslcblas -lz  -lopengl32 -lglu32 -lglut32
 endif
 
 # if image exporting should be compiled in
@@ -147,19 +150,19 @@ OBJ_FILES = $(wildcard $(OBJ_DIR)/*.o)
 
 default: $(PROJECT)
 all:     $(PROJECT)
-debug:	 
+debug:
 	$(MAKE) DEBUG=1 OPTIM=0 STRIP=0 $(PROJECT)
 
-profile:	 
+profile:
 	$(MAKE) PROF=1 DEBUG=1 OPTIM=0 STRIP=0 $(PROJECT)
 
-memleak:	 
+memleak:
 	$(MAKE) MEMLEAK=1 DEBUG=1 OPTIM=0 STRIP=0 $(PROJECT)
 
 $(PROJECT): $(OBJ_FILES)
 	@$(ECHO) 'make: building $@ for $(OS)...'
 	cd $(SRC_DIR) && $(MAKE)
-	$(CC) -o $(BIN_DIR)/$(PROJECT) $(OBJ_DIR)/*.o $(CFLAGS) $(LDFLAGS) 
+	$(CC) -o $(BIN_DIR)/$(PROJECT) $(OBJ_DIR)/*.o $(CFLAGS) $(LDFLAGS)
 	@$(ECHO) '############################################'
 	@$(ECHO) 'make: built [$@] successfully!'
 	@$(ECHO) '############################################'
@@ -167,14 +170,14 @@ $(PROJECT): $(OBJ_FILES)
 $(PROJECT)64: $(OBJ_FILES)
 	@$(ECHO) 'make: building $@ for $(OS)...'
 	cd $(SRC_DIR) && $(MAKE)
-	$(CC) $(CFLAGS) $(OBJ_DIR)/*.o -o $(BIN_DIR)/$(PROJECT)64 $(LDFLAGS) 
+	$(CC) $(CFLAGS) $(OBJ_DIR)/*.o -o $(BIN_DIR)/$(PROJECT)64 $(LDFLAGS)
 	@$(ECHO) '############################################'
 	@$(ECHO) 'make: built [$@] successfully!'
 	@$(ECHO) '############################################'
 
-install: 
+install:
 	cd $(SRC_DIR) && $(MAKE)
-	$(CC) -o $(BIN_DIR)/$(PROJECT) $(OBJ_DIR)/*.o $(CFLAGS) $(LDFLAGS) 
+	$(CC) -o $(BIN_DIR)/$(PROJECT) $(OBJ_DIR)/*.o $(CFLAGS) $(LDFLAGS)
 	@$(ECHO) 'make: installing [$(PROJECT)] for $(OS)...'
 ifeq ($(OS),linux)
 	$(INSTALL) $(BIN_DIR)/$(PROJECT) $(DEST_DIR)
@@ -198,4 +201,4 @@ clean:
 ### mode: makefile
 ### fill-column: 76
 ### comment-column: 0
-### End: 
+### End:

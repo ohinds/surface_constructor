@@ -1,4 +1,4 @@
 default:
-	cd vol && mak
+	cd vol && make
 	cd recon && make
 	cd gui && make
