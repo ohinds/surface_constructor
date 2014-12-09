@@ -1,5 +1,5 @@
 /*****************************************************************************
- * surfConTypes.h is the header file containing type declarations for 
+ * surfConTypes.h is the header file containing type declarations for
  * surfCon
  * Oliver Hinds <oph@cns.bu.edu> 2004-06-07
  *
@@ -33,11 +33,11 @@ typedef struct {
   enum ACTIONTYPE type; /* type of action */
 
   /* translation */
-  vector trans; 
+  vector trans;
 
   /* rotation */
   double angle;
-  vector rotCenter; 
+  vector rotCenter;
 
   /* scaling */
   vector scale;
@@ -50,6 +50,11 @@ typedef struct {
   contour *contourLink;
   vertex *vertexLink;
 } label;
+
+typedef struct {
+  list *fgSeeds;
+  list *bgSeeds;
+} sliceSeeds;
 
 /** dataset information */
 typedef struct {
@@ -92,13 +97,16 @@ typedef struct {
   list *sliceMarkerLists;
   int hasMarkers;
 
+  /* seed locations */
+  list *sliceSeedLists;
+
   /* surface info */
   list *vertices;
   list *faces;
 
   /* coordinate system */
   vector pixelsPerMM;
-  vector origin;    
+  vector origin;
   double rotation;
 
   /* image processing */

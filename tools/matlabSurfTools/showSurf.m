@@ -17,13 +17,13 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
   if(nargin < 1)
     fprintf('usage: handle = showSurf(surfStruct[,faceColor,faceAlpha,labelColors]');
   end
-  if(nargin < 2) 
+  if(nargin < 2)
     showVertexCurvature = 0;
   end
-  if(nargin < 3) 
+  if(nargin < 3)
     showFaceCurvature = 0;
   end
-  if(nargin < 4) 
+  if(nargin < 4)
     showLabels = 0;
   end
   if(nargin > 4)
@@ -35,7 +35,7 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
   else
     vcdataOverride = 0;
   end
-  
+
   % determine the face/vertex coloring
   if(~vcdataOverride)
     vertexFaceColor = [];
@@ -43,17 +43,17 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
       vertexFaceColor = surfStruct.faceCurvature;
       showVertexCurvature = 0;
     end
-    
+
     if(showVertexCurvature & isfield(surfStruct,'vertexCurvature'))
       vertexFaceColor = surfStruct.vertexCurvature;
     end
-    
+
     if(isempty(vertexFaceColor))
       vertexFaceColor = repmat([0.6,0.6,0.6],size(surfStruct.faces,1),1);
     else
       vertexFaceColor(find(vertexFaceColor == 1)) = 0.7;
       vertexFaceColor(find(vertexFaceColor == -1)) = 0.4;
-      vertexFaceColor = repmat(vertexFaceColor,1,3);    
+      vertexFaceColor = repmat(vertexFaceColor,1,3);
     end
   else % if there is vertex coloring, convert it to face coloring
     fcdata = zeros(size(surfStruct.faces,1),1);
@@ -67,7 +67,7 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
   labelColorMod = 0.2;
   if(showLabels & isfield(surfStruct,'vertexLabels'))
     surfStruct.vertexLabels(find(~isfinite(surfStruct.vertexLabels))) = -1;
-    
+
     if(size(vertexFaceColor,1) == size(surfStruct.vertices,1))
       lv = find(surfStruct.vertexLabels ~= -1);
       vertexFaceColor(lv,2:3) = vertexFaceColor(lv,2:3) - labelColorMod;
@@ -83,13 +83,13 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
     end
     labels = 0;
   end
-  
+
   % patch whatever vertices are left over
   h = patch('vertices', surfStruct.vertices, ...
 	    'faces', surfStruct.faces, ...
 	    'facevertexcdata', vertexFaceColor, ...
 	    'facecolor', 'flat', ...
-	    'edgecolor', 'none');
+	    'edgecolor', 'black');
   axis off;
   axis vis3d;
   axis equal;

@@ -3,7 +3,7 @@
  * reconstruct surfaces from serial sections
  * Oliver Hinds <oph@cns.bu.edu> 2004-02-04
  *
- * 
+ *
  *
  *****************************************************************************/
 
@@ -26,6 +26,7 @@
 #include"contour.h"
 #include"contour.extern"
 #include"dataset.h"
+#include"seed.h"
 
 /* libsr */
 //#include"nuages.h"
@@ -76,7 +77,7 @@ int getopt_long(int argc, char * const argv[],
  */
 void init(int argc, char **argv);
 
-/** 
+/**
  * initializes dataset
  */
 void datasetInit();
@@ -128,7 +129,7 @@ void redisplay();
 /** event handlers **/
 
 /**
- * blocks forr a key press 
+ * blocks forr a key press
  * NOTE: this will peg your cpu in current implementation
  */
 char blockForKeyPress();
