@@ -92,6 +92,23 @@ void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
   }
 }
 
+void assignSeedLists(image *seedImg, int chan, list *seedList) {
+  int row;
+  int col;
+  pixelLocation *loc;
+
+  for (row = 0; row < seedImg->width; row++) {
+    for (col = 0; col < seedImg->height; col++) {
+      if (seedImg->pixels[subToInd(row, col, chan, seedImg)] > 0) {
+        loc = (pixelLocation*) malloc(sizeof(pixelLocation));
+        loc->row = row;
+        loc->col = col;
+
+        enqueue(seedList, loc);
+      }
+    }
+  }
+}
 
 /**
  * initialize general properties
@@ -137,6 +154,14 @@ void seedInit() {
  * uninitializes the seed drawing and imaging stuff
  */
 void seedUninit() {
+  freeListAndData(seeds->fgSeeds);
+  seeds->fgSeeds = newList(LIST);
+  assignSeedLists(fgSeeds, 0, seeds->fgSeeds);
+
+  freeListAndData(seeds->bgSeeds);
+  seeds->bgSeeds = newList(LIST);
+  assignSeedLists(bgSeeds, 2, seeds->bgSeeds);
+
   /* unload the texture if dynamic textures are on */
   if(dynamicTextures) {
     unloadTexture(curSlice);
@@ -309,61 +334,43 @@ void seedKeyboard(unsigned char key, int x, int y) {
  * mouse handler determines what kind of actions are being performed
  */
 void mouseHandler(vector mousePos) {
-  /* choose action based on button */
-  switch(buttonDown) {
-      case GLUT_LEFT_BUTTON:
-        /* left button: foreground seed placement and deletion */
-        if(!shiftDown)  { /* add a new seed */
-          addSeed(TRUE, mousePos);
-        }
-        else { /* remove a seed */
-          removeSeed(TRUE, mousePos);
-        }
-        break;
+  int fg = !controlDown;
 
-      case GLUT_MIDDLE_BUTTON: /* delete */
-        /* middle button: background seed placement and deletion */
-        if(!shiftDown)  { /* add a new seed */
-          addSeed(FALSE, mousePos);
-        }
-        else { /* remove a seed */
-          removeSeed(FALSE, mousePos);
-        }
-        break;
+  if(!shiftDown)  { /* add a new seed */
+    addSeed(fg, mousePos);
+  }
+  else { /* remove a seed */
+    removeSeed(fg, mousePos);
   }
 
   redisplay();
 }
 
 void seedMouse(int button, int state, vector mousePos) {
-  int mod;
+  int mod = glutGetModifiers();
 
   /* assign a modifier so we can see them in other funcitons */
   if(state == GLUT_DOWN) {
     buttonDown = button;
 
-    mod = glutGetModifiers();
-
-    switch(glutGetModifiers()) {
-        case GLUT_ACTIVE_CTRL:
-          controlDown = TRUE;
-          break;
-        case GLUT_ACTIVE_SHIFT:
-          shiftDown = TRUE;
-          break;
-        case GLUT_ACTIVE_ALT:
-        case GLUT_ACTIVE_SHIFT | GLUT_ACTIVE_CTRL:
-          altDown = TRUE;
-          break;
+    if(mod & GLUT_ACTIVE_CTRL) {
+      controlDown = TRUE;
     }
 
+    if(mod & GLUT_ACTIVE_SHIFT) {
+      shiftDown = TRUE;
+    }
+
+    if (mod & GLUT_ACTIVE_ALT ||
+        (mod & GLUT_ACTIVE_SHIFT && mod & GLUT_ACTIVE_CTRL)) {
+          altDown = TRUE;
+    }
+    mouseHandler(mousePos);
   }
   else {
     buttonDown = GLUT_NO_BUTTON;
     controlDown = shiftDown = altDown = FALSE;
   }
-
-  mouseHandler(mousePos);
 }
 
 /**

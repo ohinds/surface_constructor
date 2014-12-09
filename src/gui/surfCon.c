@@ -506,7 +506,9 @@ void surfAction(int act) {
         redisplay();
         break;
       case 's': /* save the dataset */
+        modeUninit();
         saveDataset(curDataset);
+        modeInit();
         redisplay();
         break;
       case 'S': /* save the slices raw */
