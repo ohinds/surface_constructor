@@ -30,7 +30,6 @@ export LIB_DEST_DIR = /usr/local/lib/
 export HDR_DEST_DIR = /usr/local/include/
 export LIB_DIR = $(PWD)/lib/
 export SRC_DIR = $(PWD)/src/
-export OBJ_DIR = $(PWD)/obj/
 export BIN_DIR = $(PWD)/bin/
 export VOL_DIR = $(PWD)/../vol/
 
