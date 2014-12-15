@@ -23,6 +23,7 @@ static GLuint tex;
 static sliceSeeds *seeds;
 static image *fgSeeds = NULL;
 static image *bgSeeds = NULL;
+static image *overlapSeeds = NULL;
 static int showSeeds = TRUE;
 
 /* mouse modifier state */
@@ -92,6 +93,25 @@ void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
   }
 }
 
+void assignOverlapPixels(image *img1, image *img2, int colorDim,
+                         image *overlap) {
+  int row, col, chan;
+
+  for (row = 0; row < overlap->width; row++) {
+    for (col = 0; col < overlap->height; col++) {
+      for (chan = 0; chan < 4; chan++) {
+        overlap->pixels[subToInd(row, col, chan, overlap)] = 0;
+      }
+
+      if (img1->pixels[subToInd(row, col, 3, overlap)] > 0 &&
+          img2->pixels[subToInd(row, col, 3, overlap)] > 0) {
+        overlap->pixels[subToInd(row, col, colorDim, overlap)] = USHRT_MAX;
+        overlap->pixels[subToInd(row, col, 3, overlap)] = USHRT_MAX;
+      }
+    }
+  }
+}
+
 void assignSeedLists(image *seedImg, int chan, list *seedList) {
   int row;
   int col;
@@ -143,9 +163,11 @@ void seedInit() {
   /* build seed textures */
   fgSeeds = createImage(imgBuf->width, imgBuf->height, 4);
   bgSeeds = createImage(imgBuf->width, imgBuf->height, 4);
+  overlapSeeds = createImage(imgBuf->width, imgBuf->height, 4);
 
   assignSeedPixels(seeds->fgSeeds, 0, fgSeeds);
   assignSeedPixels(seeds->bgSeeds, 2, bgSeeds);
+  assignOverlapPixels(fgSeeds, bgSeeds, 1, overlapSeeds);
 
   strcpy(alertString,"");
 }
@@ -216,6 +238,7 @@ void seedDraw() {
   /* build seed textures */
   GLuint fgTex = imageTexture(curDataset, fgSeeds);
   GLuint bgTex = imageTexture(curDataset, bgSeeds);
+  GLuint overlapTex = imageTexture(curDataset, overlapSeeds);
 
   if(curDataset->imageSource != VP_NOIMAGES) {
     /* turn on texture mapping */
@@ -231,6 +254,9 @@ void seedDraw() {
       drawTexture();
 
       glBindTexture(textureMethod, bgTex);
+      drawTexture();
+
+      glBindTexture(textureMethod, overlapTex);
       drawTexture();
     }
 
