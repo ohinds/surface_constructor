@@ -34,7 +34,7 @@ static int shiftDown = FALSE;
 static int altDown = FALSE;
 
 /* draw sizes for paintbrush in pixels */
-int brushRadius = 4;
+float brushRadius = 4;
 
 /******************************************************
  * functions
@@ -270,6 +270,13 @@ void seedDraw() {
   strcat(modeString,":");
 }
 
+void runSegmentation() {
+  char *command = "cd /home/ohinds/projects/surface_constructor/src/random_walker_matlab_code && matlab -nosplash -nodisplay -r \"random_walker_mri('/home/ohinds/z/mgh/ex_vivo_v1_recons/ex_vivo07/flash20_200um_avg.mgh', '/home/ohinds/z/mgh/ex_vivo_v1_recons/ex_vivo07/surfRecon/bf_ex_vivo07_mgh_sfn.ds', '/tmp/segvol.mgh'); exit\"";
+  printf("%s\n", command);
+  int ret = system(command);
+  fprintf(stdout, "done with segmentation, returned %d\n", ret);
+}
+
 /** event handlers **/
 
 /**
@@ -286,6 +293,17 @@ void seedAction(int action) {
         showSeeds = !showSeeds;
         redisplay();
         break;
+      case '-':
+      case '_':
+        brushRadius /= 2.f;
+        break;
+      case '=':
+      case '+':
+        brushRadius *= 2.f;
+        break;
+      case 'r':
+        runSegmentation();
+        break;
       default:
         break;
   }
@@ -295,7 +313,7 @@ void addSeed(int foreground, vector mousePos) {
   int row;
   int col;
   int chan;
-  int sqBrushRadius = brushRadius * brushRadius;
+  float sqBrushRadius = brushRadius * brushRadius;
 
   image *img = foreground ? fgSeeds : bgSeeds;
 
@@ -321,7 +339,7 @@ void removeSeed(int foreground, vector mousePos) {
   int row;
   int col;
   int chan;
-  int sqBrushRadius = brushRadius * brushRadius;
+  float sqBrushRadius = brushRadius * brushRadius;
 
   image *img = foreground ? fgSeeds : bgSeeds;
 
@@ -347,6 +365,9 @@ void removeSeed(int foreground, vector mousePos) {
 void createSeedMenu() {
   glutAddMenuEntry("-- Seed Specific Actions --",0);
   glutAddMenuEntry("'w' toggle seed visibility",'w');
+  glutAddMenuEntry("'=' increase brush size",'=');
+  glutAddMenuEntry("'-' reduce brush size",'-');
+  glutAddMenuEntry("'r' run segmentation",'r');
 }
 
 /**

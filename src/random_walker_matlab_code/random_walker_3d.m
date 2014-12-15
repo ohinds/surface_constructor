@@ -1,6 +1,6 @@
-function [mask,probabilities] = random_walker(img,seeds,labels,beta)
-%Function [mask,probabilities] = random_walker(img,seeds,labels,beta) uses the
-%random walker segmentation algorithm to produce a segmentation given a 2D
+function [mask,probabilities] = random_walker_3d(img,seeds,labels,beta)
+%Function [mask,probabilities] = random_walker_3d(img,seeds,labels,beta) uses the
+%random walker segmentation algorithm to produce a segmentation given a #D
 %image, input seeds and seed labels.
 %
 %Inputs: img - The image to be segmented
@@ -12,8 +12,8 @@ function [mask,probabilities] = random_walker(img,seeds,labels,beta)
 %
 %Output: mask - A labeling of each pixel with values 1-K, indicating the
 %           object membership of each pixel
-%        probabilities - Pixel (i,j) belongs to label 'k' with probability
-%           equal to probabilities(i,j,k)
+%        probabilities - Voxel (i,j,k) belongs to label 'm' with probability
+%           equal to probabilities(i,j,k,m)
 %
 %
 %10/31/05 - Leo Grady

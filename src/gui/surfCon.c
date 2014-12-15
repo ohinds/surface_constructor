@@ -717,6 +717,9 @@ void surfAction(int act) {
         case TACK:
           contourAction(act);
           break;
+        case SEED:
+          seedAction(act);
+          break;
 /*     case LACE: */
 /*       laceAction(act); */
 /*       break; */
