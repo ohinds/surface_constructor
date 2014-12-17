@@ -23,6 +23,8 @@ static int validateContoursOnSave = FALSE;
 void newDatasetCommon(dataset *ds) {
   int i;
 
+  ds->seg = NULL;
+
   /* allocate lists */
   ds->sliceActionLists = newList(LIST);
   ds->sliceContourLists = newList(LIST);
@@ -292,7 +294,8 @@ dataset *readDataset(char *filename) {
   dataset *ds;
   int numAlignedSlices,numTackedSlices,numLabels,numMarkedSlices,
     numSlicesWithSeeds, numVertices,numFaces,winW,winH,index,curSl,curCt;
-  char str[MAX_STR_LEN] = "", trash[MAX_STR_LEN] = "";
+  char str[MAX_STR_LEN] = "", trash[MAX_STR_LEN] = "",
+    segFilename[MAX_STR_LEN] = "";
   int i,v1,v2,v3,row,col,temp;
   double a;
   vector x;
@@ -331,7 +334,7 @@ dataset *readDataset(char *filename) {
   ds->hasLabels = 0;
   ds->hasMarkers = 0;
   ds->vol = NULL;
-
+  ds->seg = NULL;
 
   /* assign this filename */
   strcpy(ds->filename,filename);
@@ -737,6 +740,16 @@ dataset *readDataset(char *filename) {
       fscanf(fp,"\n\n");
     }
     fprintf(stdout,"done\n");
+  }
+
+  fscanf(fp, "\nsegmentation volume:");
+  if (!feof(fp)) {
+    fscanf(fp, "%s\n", segFilename);
+    ds->seg = loadMGHVolume(segFilename);
+
+    if(ds->seg == NULL) {
+      fprintf(stderr,"readDatasetImage: error loading seg file\n");
+    }
   }
 
   fprintf(stdout,"\n");
@@ -1262,6 +1275,18 @@ int getSliceFilename(dataset *ds, int sliceNum, char *imgFilename) {
 }
 
 /**
+ * get the filename to save the dataset to
+ */
+void getDatasetFilename(dataset *ds, char *filename) {
+  /* construct the filenme */
+  if(ds->filename[0] != '/') {
+    strcat(filename,getenv("PWD"));
+    strcat(filename,"/");
+  }
+  strcat(filename,ds->filename);
+}
+
+/**
  * prepares the dataset structure for saving, updates the
  * hasLables, hasMarkers, hasAdjacent flags are set
  */
@@ -1339,12 +1364,7 @@ int saveDataset(dataset *ds) {
     validated = validateContours(ds);
   }
 
-  /* construct the filenme */
-  if(ds->filename[0] != '/') {
-    strcat(filename,getenv("PWD"));
-    strcat(filename,"/");
-  }
-  strcat(filename,ds->filename);
+  getDatasetFilename(ds, filename);
 
   /* open the file */
   if(!(fp = fopen(filename,"w+"))) {
@@ -1566,6 +1586,10 @@ int writeDataset(dataset *ds, FILE* fp) {
   fprintf(fp,"contrastAdjust: %f\n", ds->contrastAdjust);
 
   dumpSeeds(ds,fp);
+
+  if (ds->seg != NULL) {
+    fprintf(fp, "segmentation volume: %s\n", ds->seg->filename);
+  }
 
   fprintf(stdout,"done\n");
 

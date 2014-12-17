@@ -18,6 +18,7 @@
 static image *imgBuf;
 static quadri imgBounds;
 static GLuint tex;
+static GLuint segTex;
 
 /* the seeds */
 static sliceSeeds *seeds;
@@ -25,6 +26,7 @@ static image *fgSeeds = NULL;
 static image *bgSeeds = NULL;
 static image *overlapSeeds = NULL;
 static int showSeeds = TRUE;
+static int showSeg = TRUE;
 
 /* mouse modifier state */
 #define GLUT_NO_BUTTON (GLUT_MIDDLE_BUTTON + 3)
@@ -40,11 +42,111 @@ float brushRadius = 4;
  * functions
  ******************************************************/
 
+/****** LOCALLY USED FUNCTIONS ********/
+int subToInd2D(int row, int col, image *img) {
+  return row + col * img->width;
+}
+
+int subToInd3D(int row, int col, int chan, image *img) {
+  return chan + row * 4 + col * (img->width * 4);
+}
+
+void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
+  int row, col, chan;
+  pixelLocation *location;
+  listNode *i;
+
+  for (row = 0; row < seedImg->width; row++) {
+    for (col = 0; col < seedImg->height; col++) {
+      for (chan = 0; chan < 4; chan++) {
+        seedImg->pixels[subToInd3D(row, col, chan, seedImg)] = 0;
+      }
+    }
+  }
+
+  for (i = getListNode(seedList, 0); i; i = (listNode*) i->next) {
+    location = (pixelLocation*) i->data;
+    for (chan = 0; chan < 3; chan++) {
+      seedImg->pixels[subToInd3D(location->row,
+                               location->col, chan, seedImg)] = 0;
+    }
+    seedImg->pixels[subToInd3D(location->row, location->col, colorDim, seedImg)] =
+      USHRT_MAX;
+    seedImg->pixels[subToInd3D(location->row,
+                             location->col, 3, seedImg)] = USHRT_MAX;
+  }
+}
+
+void assignOverlapPixels(image *img1, image *img2, int colorDim,
+                         image *overlap) {
+  int row, col, chan;
+
+  for (row = 0; row < overlap->width; row++) {
+    for (col = 0; col < overlap->height; col++) {
+      for (chan = 0; chan < 4; chan++) {
+        overlap->pixels[subToInd3D(row, col, chan, overlap)] = 0;
+      }
+
+      if (img1->pixels[subToInd3D(row, col, 3, overlap)] > 0 &&
+          img2->pixels[subToInd3D(row, col, 3, overlap)] > 0) {
+        overlap->pixels[subToInd3D(row, col, colorDim, overlap)] = USHRT_MAX;
+        overlap->pixels[subToInd3D(row, col, 3, overlap)] = USHRT_MAX;
+      }
+    }
+  }
+}
+
+void assignSeedLists(image *seedImg, int chan, list *seedList) {
+  int row;
+  int col;
+  pixelLocation *loc;
+
+  for (row = 0; row < seedImg->width; row++) {
+    for (col = 0; col < seedImg->height; col++) {
+      if (seedImg->pixels[subToInd3D(row, col, chan, seedImg)] > 0) {
+        loc = (pixelLocation*) malloc(sizeof(pixelLocation));
+        loc->row = row;
+        loc->col = col;
+
+        enqueue(seedList, loc);
+      }
+    }
+  }
+}
+
+void buildSegTex(image *segImage) {
+  image *segTexImage = createImage(segImage->width, segImage->height, 4);
+  int row, col, chan;
+
+  for (row = 0; row < segImage->width; row++) {
+    for (col = 0; col < segImage->height; col++) {
+      if (segImage->pixels[subToInd2D(row, col, segImage)] == 1) {
+        segTexImage->pixels[subToInd3D(row, col, 0, segTexImage)] = USHRT_MAX;
+        segTexImage->pixels[subToInd3D(row, col, 1, segTexImage)] = USHRT_MAX;
+        segTexImage->pixels[subToInd3D(row, col, 2, segTexImage)] = 0;
+        segTexImage->pixels[subToInd3D(row, col, 3, segTexImage)] =
+          0.2 * USHRT_MAX;
+      }
+      else {
+        for (chan = 0; chan < 4; chan++) {
+          segTexImage->pixels[subToInd3D(row, col, chan, segTexImage)] = 0;
+        }
+      }
+    }
+  }
+
+  segTex = imageTexture(curDataset, segTexImage);
+  free(segTexImage);
+}
+
+/****** END LOCALLY USED FUNCTIONS ********/
+
 /**
  * load the images and perform init on them
  */
 void seedImgInit() {
   image *img;
+  image *segImg;
 
   /* validate the curSlice */
   curSlice %= curDataset->numSlices;
@@ -61,72 +163,12 @@ void seedImgInit() {
   imgBuf = &curDataset->slices[curSlice];
 
   tex = curDataset->sliceTextures[curSlice];
-}
 
-int subToInd(int row, int col, int chan, image *img) {
-  return chan + row * 4 + col * (img->width * 4);
-}
-
-void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
-  int row, col, chan;
-  pixelLocation *location;
-  listNode *i;
-
-  for (row = 0; row < seedImg->width; row++) {
-    for (col = 0; col < seedImg->height; col++) {
-      for (chan = 0; chan < 4; chan++) {
-        seedImg->pixels[subToInd(row, col, chan, seedImg)] = 0;
-      }
-    }
-  }
-
-  for (i = getListNode(seedList, 0); i; i = (listNode*) i->next) {
-    location = (pixelLocation*) i->data;
-    for (chan = 0; chan < 3; chan++) {
-      seedImg->pixels[subToInd(location->row,
-                               location->col, chan, seedImg)] = 0;
-    }
-    seedImg->pixels[subToInd(location->row, location->col, colorDim, seedImg)] =
-      USHRT_MAX;
-    seedImg->pixels[subToInd(location->row,
-                             location->col, 3, seedImg)] = USHRT_MAX;
-  }
-}
-
-void assignOverlapPixels(image *img1, image *img2, int colorDim,
-                         image *overlap) {
-  int row, col, chan;
-
-  for (row = 0; row < overlap->width; row++) {
-    for (col = 0; col < overlap->height; col++) {
-      for (chan = 0; chan < 4; chan++) {
-        overlap->pixels[subToInd(row, col, chan, overlap)] = 0;
-      }
-
-      if (img1->pixels[subToInd(row, col, 3, overlap)] > 0 &&
-          img2->pixels[subToInd(row, col, 3, overlap)] > 0) {
-        overlap->pixels[subToInd(row, col, colorDim, overlap)] = USHRT_MAX;
-        overlap->pixels[subToInd(row, col, 3, overlap)] = USHRT_MAX;
-      }
-    }
-  }
-}
-
-void assignSeedLists(image *seedImg, int chan, list *seedList) {
-  int row;
-  int col;
-  pixelLocation *loc;
-
-  for (row = 0; row < seedImg->width; row++) {
-    for (col = 0; col < seedImg->height; col++) {
-      if (seedImg->pixels[subToInd(row, col, chan, seedImg)] > 0) {
-        loc = (pixelLocation*) malloc(sizeof(pixelLocation));
-        loc->row = row;
-        loc->col = col;
-
-        enqueue(seedList, loc);
-      }
-    }
+  if (curDataset->seg != NULL) {
+    curDataset->seg->selectedVoxel[curDataset->vol->sliceDir] = curSlice;
+    segImg = sliceVolume(curDataset->seg,0,curDataset->vol->sliceDir,0);
+    buildSegTex(segImg);
+    free(segImg);
   }
 }
 
@@ -249,6 +291,11 @@ void seedDraw() {
     glBindTexture(textureMethod, tex);
     drawTexture();
 
+    if (showSeg && curDataset->seg != NULL) {
+      glBindTexture(textureMethod, segTex);
+      drawTexture();
+    }
+
     if (showSeeds) {
       glBindTexture(textureMethod, fgTex);
       drawTexture();
@@ -271,10 +318,32 @@ void seedDraw() {
 }
 
 void runSegmentation() {
-  char *command = "cd /home/ohinds/projects/surface_constructor/src/random_walker_matlab_code && matlab -nosplash -nodisplay -r \"random_walker_mri('/home/ohinds/z/mgh/ex_vivo_v1_recons/ex_vivo07/flash20_200um_avg.mgh', '/home/ohinds/z/mgh/ex_vivo_v1_recons/ex_vivo07/surfRecon/bf_ex_vivo07_mgh_sfn.ds', '/tmp/segvol.mgh'); exit\"";
-  printf("%s\n", command);
+  char command[MAX_STR_LEN * 2];
+  char seg_filename[MAX_STR_LEN];
+
+  strcpy(seg_filename, curDataset->vol->filename);
+  // TODO: hack, fixme
+  strcpy(&seg_filename[strlen(seg_filename) - 4], "_seg.mgh");
+
+  sprintf(command, "matlab -nosplash -nodisplay -r \"addpath(genpath('%s')); "
+          "random_walker_mri('%s', '%s', '%s', %d:%d); exit\"",
+          "$SURFACE_CONSTRUCTOR_HOME/src/random_walker",
+          curDataset->vol->filename, curDataset->filename, seg_filename,
+          curSlice - 4, curSlice + 6);
+
+  fprintf(stdout, "%s\n", command);
+
+  fprintf(stdout, "running segmentation...\n");
   int ret = system(command);
   fprintf(stdout, "done with segmentation, returned %d\n", ret);
+
+  if (curDataset->seg != NULL) {
+    free(curDataset->seg);
+  }
+
+  curDataset->seg = loadMGHVolume(seg_filename);
+  fprintf(stdout, "loaded: %s\n", curDataset->seg->filename);
+  changeSlice(0);
 }
 
 /** event handlers **/
@@ -291,6 +360,10 @@ void seedAction(int action) {
         break;
       case 'w': /* toggle current slice seed display */
         showSeeds = !showSeeds;
+        redisplay();
+        break;
+      case 't': /* toggle segmentation volume */
+        showSeg = !showSeg;
         redisplay();
         break;
       case '-':
@@ -324,12 +397,12 @@ void addSeed(int foreground, vector mousePos) {
         continue;
       }
 
-      if (img->pixels[subToInd(row, col, 3, img)] == 0) {
+      if (img->pixels[subToInd3D(row, col, 3, img)] == 0) {
         for (chan = 0; chan < 4; chan++) {
-          img->pixels[subToInd(row, col, chan, img)] = 0;
+          img->pixels[subToInd3D(row, col, chan, img)] = 0;
         }
-        img->pixels[subToInd(row, col, foreground ? 0 : 2, img)] = USHRT_MAX;
-        img->pixels[subToInd(row, col, 3, img)] = USHRT_MAX;
+        img->pixels[subToInd3D(row, col, foreground ? 0 : 2, img)] = USHRT_MAX;
+        img->pixels[subToInd3D(row, col, 3, img)] = USHRT_MAX;
       }
     }
   }
@@ -350,9 +423,9 @@ void removeSeed(int foreground, vector mousePos) {
         continue;
       }
 
-      if (img->pixels[subToInd(row, col, 3, img)] > 0) {
+      if (img->pixels[subToInd3D(row, col, 3, img)] > 0) {
         for (chan = 0; chan < 4; chan++) {
-          img->pixels[subToInd(row, col, chan, img)] = 0;
+          img->pixels[subToInd3D(row, col, chan, img)] = 0;
         }
       }
     }
@@ -365,6 +438,7 @@ void removeSeed(int foreground, vector mousePos) {
 void createSeedMenu() {
   glutAddMenuEntry("-- Seed Specific Actions --",0);
   glutAddMenuEntry("'w' toggle seed visibility",'w');
+  glutAddMenuEntry("'t' toggle segmentation visibility",'t');
   glutAddMenuEntry("'=' increase brush size",'=');
   glutAddMenuEntry("'-' reduce brush size",'-');
   glutAddMenuEntry("'r' run segmentation",'r');

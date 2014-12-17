@@ -323,6 +323,8 @@ volume *loadMGHVolume(char *filename) {
     fprintf(stderr,"done reading mgh file %s\n", filename);
   }
 
+  strcpy(vol->filename, filename);
+
   return vol;
 }
 
@@ -657,7 +659,7 @@ volume *loadNiftiVolume(char *filename) {
 //    return NULL;
 //  }
 //
-  // create a volume of the appropriate size (only support 4d images here) 
+  // create a volume of the appropriate size (only support 4d images here)
   //  vol = createVolume(nii->nt,nii->nx,nii->ny,nii->nz,1,1);
 
 //  // convert to our datatype
@@ -708,4 +710,3 @@ void copyPixels(volume* vol, image *img, int sliceIndex) {
  * comment-column: 0
  * End:
  ********************************************************************/
-

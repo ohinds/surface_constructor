@@ -75,6 +75,7 @@ typedef struct {
   enum IMAGEFORMAT imageFormat;
   image *slices;
   volume *vol;
+  volume *seg;
 
   /* width and height of images in dataset */
   int width, height;

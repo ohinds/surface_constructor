@@ -63,6 +63,11 @@ int readDatasetImage(FILE *fp, dataset *ds);
 int readDatasetNoImages(FILE *fp, dataset *ds);
 
 /**
+ * Get
+ */
+void getDatasetFilename(dataset *ds, char *filename);
+
+/**
  * prepares the dataset structure for saving, updates the
  * hasLables, hasMarkers, hasAdjacent flags are set
  */

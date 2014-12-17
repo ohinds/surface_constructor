@@ -54,6 +54,7 @@ if(sum(seeds<1) || sum(seeds>prod(size(img))) || (sum(isnan(seeds))))
     exitFlag=1;
 end
 if(sum(diff(sort(seeds))==0)) %Check for duplicate seeds
+  keyboard
     disp('ERROR: Duplicate seeds detected.')
     disp('Include only one entry per seed in the "seeds" and "labels" inputs.')
     exitFlag=1;
