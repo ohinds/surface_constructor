@@ -51,11 +51,8 @@ int subToInd3D(int row, int col, int chan, image *img) {
   return chan + row * 4 + col * (img->width * 4);
 }
 
-void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
+void clearSeedPixels(image *seedImg) {
   int row, col, chan;
-  pixelLocation *location;
-  listNode *i;
-
   for (row = 0; row < seedImg->width; row++) {
     for (col = 0; col < seedImg->height; col++) {
       for (chan = 0; chan < 4; chan++) {
@@ -63,6 +60,12 @@ void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
       }
     }
   }
+}
+
+void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
+  int chan;
+  pixelLocation *location;
+  listNode *i;
 
   for (i = getListNode(seedList, 0); i; i = (listNode*) i->next) {
     location = (pixelLocation*) i->data;
@@ -70,8 +73,8 @@ void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
       seedImg->pixels[subToInd3D(location->row,
                                location->col, chan, seedImg)] = 0;
     }
-    seedImg->pixels[subToInd3D(location->row, location->col, colorDim, seedImg)] =
-      USHRT_MAX;
+    seedImg->pixels[subToInd3D(location->row,
+                               location->col, colorDim, seedImg)] = USHRT_MAX;
     seedImg->pixels[subToInd3D(location->row,
                              location->col, 3, seedImg)] = USHRT_MAX;
   }
@@ -112,6 +115,23 @@ void assignSeedLists(image *seedImg, int chan, list *seedList) {
       }
     }
   }
+}
+
+void copySeeds(int slice) {
+  fprintf(stdout, "copying seeds from slice %d\n", slice);
+
+  sliceSeeds *seeds = (sliceSeeds*) getListNode(curDataset->sliceSeedLists,
+                                                slice)->data;
+
+  if (seeds == NULL) {
+    printf("NULL\n");
+    return;
+  }
+
+  printf("num fg: %d\nnum bg: %d\n", listSize(seeds->fgSeeds), listSize(seeds->bgSeeds));
+
+  assignSeedPixels(seeds->fgSeeds, 0, fgSeeds);
+  assignSeedPixels(seeds->bgSeeds, 2, bgSeeds);
 }
 
 void buildSegTex(image *segImage) {
@@ -207,7 +227,9 @@ void seedInit() {
   bgSeeds = createImage(imgBuf->width, imgBuf->height, 4);
   overlapSeeds = createImage(imgBuf->width, imgBuf->height, 4);
 
+  clearSeedPixels(fgSeeds);
   assignSeedPixels(seeds->fgSeeds, 0, fgSeeds);
+  clearSeedPixels(bgSeeds);
   assignSeedPixels(seeds->bgSeeds, 2, bgSeeds);
   assignOverlapPixels(fgSeeds, bgSeeds, 1, overlapSeeds);
 
@@ -327,7 +349,7 @@ void runSegmentation() {
 
   sprintf(command, "matlab -nosplash -nodisplay -r \"addpath(genpath('%s')); "
           "random_walker_mri('%s', '%s', '%s', %d:%d); exit\"",
-          "$SURFACE_CONSTRUCTOR_HOME/src/random_walker",
+          "$SURFACE_CONSTRUCTOR_HOME",
           curDataset->vol->filename, curDataset->filename, seg_filename,
           curSlice - 4, curSlice + 6);
 
@@ -364,6 +386,14 @@ void seedAction(int action) {
         break;
       case 't': /* toggle segmentation volume */
         showSeg = !showSeg;
+        redisplay();
+        break;
+      case 'c':
+        copySeeds(curSlice + 1);
+        redisplay();
+        break;
+      case 'v':
+        copySeeds(curSlice - 1);
         redisplay();
         break;
       case '-':
@@ -439,6 +469,8 @@ void createSeedMenu() {
   glutAddMenuEntry("-- Seed Specific Actions --",0);
   glutAddMenuEntry("'w' toggle seed visibility",'w');
   glutAddMenuEntry("'t' toggle segmentation visibility",'t');
+  glutAddMenuEntry("'c' copy next slice's seeds to this slice",'c');
+  glutAddMenuEntry("'v' copy previous slice's seeds to this slice",'v');
   glutAddMenuEntry("'=' increase brush size",'=');
   glutAddMenuEntry("'-' reduce brush size",'-');
   glutAddMenuEntry("'r' run segmentation",'r');
