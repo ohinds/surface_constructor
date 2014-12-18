@@ -156,7 +156,7 @@ void buildSegTex(image *segImage) {
   }
 
   segTex = imageTexture(curDataset, segTexImage);
-  free(segTexImage);
+  freeImage(segTexImage);
 }
 
 /****** END LOCALLY USED FUNCTIONS ********/
@@ -176,7 +176,7 @@ void seedImgInit() {
   if(dynamicTextures) {
     img = loadImage(curDataset, curSlice);
     curDataset->slices[curSlice] = *img;
-    free(img);
+    freeImage(img);
   }
 
   /* get image */
@@ -188,7 +188,7 @@ void seedImgInit() {
     curDataset->seg->selectedVoxel[curDataset->vol->sliceDir] = curSlice;
     segImg = sliceVolume(curDataset->seg,0,curDataset->vol->sliceDir,0);
     buildSegTex(segImg);
-    free(segImg);
+    freeImage(segImg);
   }
 }
 
@@ -247,6 +247,9 @@ void seedUninit() {
   freeListAndData(seeds->bgSeeds);
   seeds->bgSeeds = newList(LIST);
   assignSeedLists(bgSeeds, 2, seeds->bgSeeds);
+
+  freeImage(fgSeeds);
+  freeImage(bgSeeds);
 
   /* unload the texture if dynamic textures are on */
   if(dynamicTextures) {
@@ -360,7 +363,7 @@ void runSegmentation() {
   fprintf(stdout, "done with segmentation, returned %d\n", ret);
 
   if (curDataset->seg != NULL) {
-    free(curDataset->seg);
+    freeVolume(curDataset->seg);
   }
 
   curDataset->seg = loadMGHVolume(seg_filename);
