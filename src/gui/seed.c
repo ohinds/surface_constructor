@@ -250,6 +250,7 @@ void seedUninit() {
 
   freeImage(fgSeeds);
   freeImage(bgSeeds);
+  freeImage(overlapSeeds);
 
   /* unload the texture if dynamic textures are on */
   if(dynamicTextures) {
