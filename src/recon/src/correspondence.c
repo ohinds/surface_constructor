@@ -28,15 +28,15 @@ char contourDistancesFilename[SR_MAX_STR_LEN] = "contour_distances.txt";
  */
 int buildCorrespondenceGuess(list *slices) {
   switch(correspondenceScope) {
-  case LOCAL:
-    return buildCorrespondenceGuessLocal(slices);
-    break;
-  case GLOBAL:
-    return buildCorrespondenceGuessGlobal(slices);
-    break;
-  default:
-    return buildCorrespondenceGuessGlobal(slices);
-    break;
+      case LOCAL:
+        return buildCorrespondenceGuessLocal(slices);
+        break;
+      case GLOBAL:
+        return buildCorrespondenceGuessGlobal(slices);
+        break;
+      default:
+        return buildCorrespondenceGuessGlobal(slices);
+        break;
   }
 }
 
@@ -82,7 +82,7 @@ int buildCorrespondenceGuessLocal(list *slices) {
       enqueue(c1->adjacentContours,c2);
 
       if(SR_DEBUG) {
-	fprintf(stderr,"only one contour on each slice, connecting them\n");
+        fprintf(stderr,"only one contour on each slice, connecting them\n");
       }
 
       continue;
@@ -93,16 +93,16 @@ int buildCorrespondenceGuessLocal(list *slices) {
 
     /* make the correspondence */
     switch(correspondenceMethod) {
-    case HISTOGRAM:
-    case DENSITY:
-      correspondContoursHistogram(thisSlice,nextSlice,dm,m,n);
-      break;
-    case KMEANS:
-      correspondContoursKmeans(thisSlice,nextSlice,dm,m,n);
-      break;
-    default:
-      correspondContoursKmeans(thisSlice,nextSlice,dm,m,n);
-      break;
+        case HISTOGRAM:
+        case DENSITY:
+          correspondContoursHistogram(thisSlice,nextSlice,dm,m,n);
+          break;
+        case KMEANS:
+          correspondContoursKmeans(thisSlice,nextSlice,dm,m,n);
+          break;
+        default:
+          correspondContoursKmeans(thisSlice,nextSlice,dm,m,n);
+          break;
     }
 
     freeDistanceMatrix(dm,m,n);
@@ -120,8 +120,8 @@ int buildCorrespondenceGuessGlobal(list *slices) {
     *dms = newList(LIST),
     *ms = newList(LIST),
     *ns = newList(LIST);
+  int indi = 0;
 
-  
   long m,n;
   double connectionThreshold = SR_BIG, **dm;
 
@@ -138,18 +138,21 @@ int buildCorrespondenceGuessGlobal(list *slices) {
   }
 
   /* for each pair of slices, store the dms for analysis */
-  for(i = getListNode(slices,0); i->next; i = (listNode*) i->next) {
+  for(i = getListNode(slices,0); i->next; i = (listNode*) i->next, indi++) {
     thisSlice = (list*) i->data;
     nextSlice = (list*) ((listNode*)i->next)->data;
 
     /* if there are not contours on a slice, continue */
     if(listSize(thisSlice) == 0 || listSize(nextSlice) == 0) {
+      enqueue(dms, NULL);
+      enqueue(ms, NULL);
+      enqueue(ns, NULL);
       continue;
     }
 
     /* store the distance matrix for the two slices */
     enqueue(dms,getContourDistanceMatrix(thisSlice, nextSlice, &m, &n));
-    
+
     enqueue(ms,(int*)m); /* WATCH OUT, THE INTEGER VALUES ARE */
     enqueue(ns,(int*)n); /* USED AS POINTERS! */
   }
@@ -160,23 +163,23 @@ int buildCorrespondenceGuessGlobal(list *slices) {
 
   /* make the global correspondence */
   switch(correspondenceMethod) {
-  case DENSITY:
-    connectionThreshold = getGlobalConnectionThresholdDensity(dms,ms,ns);
-    break;
-  case HISTOGRAM:
-    connectionThreshold = getGlobalConnectionThresholdHistogram(dms,ms,ns);
-    break;
-  case KMEANS:
-    connectionThreshold = getGlobalConnectionThresholdKmeans(dms,ms,ns);
-    break;
-  default:
-    connectionThreshold = getGlobalConnectionThresholdKmeans(dms,ms,ns);
-    break;
+      case DENSITY:
+        connectionThreshold = getGlobalConnectionThresholdDensity(dms,ms,ns);
+        break;
+      case HISTOGRAM:
+        connectionThreshold = getGlobalConnectionThresholdHistogram(dms,ms,ns);
+        break;
+      case KMEANS:
+        connectionThreshold = getGlobalConnectionThresholdKmeans(dms,ms,ns);
+        break;
+      default:
+        connectionThreshold = getGlobalConnectionThresholdKmeans(dms,ms,ns);
+        break;
   }
 
   if(SR_VERBOSE) {
     fprintf(stdout, "assigning correspondence with threshold %lf...",
-	    connectionThreshold);
+            connectionThreshold);
   }
 
   /* assign the adjacency */
@@ -184,12 +187,12 @@ int buildCorrespondenceGuessGlobal(list *slices) {
 
   /* free dm lists */
   for(dmln = getListNode(dms,0),
-	mln  = getListNode(ms,0),
-	nln  = getListNode(ns,0) ;
+        mln  = getListNode(ms,0),
+        nln  = getListNode(ns,0) ;
       dmln;
       dmln = (listNode*) dmln->next,
-	mln  = (listNode*) mln->next,
-	nln  = (listNode*) nln->next
+        mln  = (listNode*) mln->next,
+        nln  = (listNode*) nln->next
       ) {
 
     dm = (double**) dmln->data;
@@ -218,7 +221,7 @@ int buildCorrespondenceGuessGlobal(list *slices) {
  * set adjacent contours by a correspondence threshold
  */
 void setAdjacentContours(list *slices, double correspondenceThreshold,
-			 list* dms, list* ms, list* ns) {
+                         list* dms, list* ms, list* ns) {
   listNode *i,*j,*k,*dmln,*mln,*nln;
   list *thisSlice, *nextSlice;
   contour *c1,*c2;
@@ -228,16 +231,16 @@ void setAdjacentContours(list *slices, double correspondenceThreshold,
 
   /* for each pair of slices, connect the contours with below threshold dist */
   for(indi = 0,
-	i = getListNode(slices,0),
-	dmln = getListNode(dms,0),
-	mln  = getListNode(ms,0),
-	nln  = getListNode(ns,0) ;
+        i = getListNode(slices,0),
+        dmln = getListNode(dms,0),
+        mln  = getListNode(ms,0),
+        nln  = getListNode(ns,0) ;
       i->next;
       indi++,
-	i = (listNode*) i->next,
-	dmln = (listNode*) dmln->next,
-	mln  = (listNode*) mln->next,
-	nln  = (listNode*) nln->next
+        i = (listNode*) i->next,
+        dmln = (listNode*) dmln->next,
+        mln  = (listNode*) mln->next,
+        nln  = (listNode*) nln->next
       ) {
     thisSlice = (list*) i->data;
     nextSlice = (list*) ((listNode*)i->next)->data;
@@ -251,9 +254,13 @@ void setAdjacentContours(list *slices, double correspondenceThreshold,
       enqueue(c1->adjacentContours,c2);
 
       if(SR_DEBUG) {
-	fprintf(stderr,"only one contour on each slice, connecting them\n");
+        fprintf(stderr,"only one contour on each slice, connecting them\n");
       }
 
+      continue;
+    }
+
+    if (dmln->data == NULL) {
       continue;
     }
 
@@ -264,14 +271,14 @@ void setAdjacentContours(list *slices, double correspondenceThreshold,
     /* connect all contours with below threshold distances */
     for(j = getListNode(thisSlice,0), indj=0; j; j=(listNode*) j->next, indj++) {
       for(k = getListNode(nextSlice,0), indk=0; k; k=(listNode*)k->next, indk++) {
-	//fprintf(stderr,"s=%d, d%d%d=%0.3lf, t=%0.3lf\n",
-	//	indi,indj,indk,dm[indj][indk],correspondenceThreshold);
+        //fprintf(stderr,"s=%d, d%d%d=%0.3lf, t=%0.3lf\n",
+        //      indi,indj,indk,dm[indj][indk],correspondenceThreshold);
 
-	if(dm[indj][indk] < correspondenceThreshold) {
-	  c1 = (contour*) j->data;
-	  c2 = (contour*) k->data;
-	  enqueue(c1->adjacentContours,c2);
-	}
+        if(dm[indj][indk] < correspondenceThreshold) {
+          c1 = (contour*) j->data;
+          c2 = (contour*) k->data;
+          enqueue(c1->adjacentContours,c2);
+        }
       }
     }
   }
@@ -316,12 +323,12 @@ int setAdjacentContoursManual(list *slices, double connectionThreshold) {
 
   /* free dm lists */
   for(dmln = getListNode(dms,0),
-	mln  = getListNode(ms,0),
-	nln  = getListNode(ns,0) ;
+        mln  = getListNode(ms,0),
+        nln  = getListNode(ns,0) ;
       dmln->next;
       dmln = (listNode*) dmln->next,
-	mln  = (listNode*) mln->next,
-	nln  = (listNode*) nln->next
+        mln  = (listNode*) mln->next,
+        nln  = (listNode*) nln->next
       ) {
 
     dm = (double**) dmln->data;
@@ -381,15 +388,15 @@ double **getContourDistanceMatrixLocal(list *slice1, list *slice2, long *m, long
   for(i = getListNode(slice1,0), c1ind = 0; i; i = (listNode*) i->next, c1ind++) {
     for(j = getListNode(slice2,0), c2ind = 0; j; j = (listNode*) j->next, c2ind++) {
       i2j = getContoursDist((contour*) i->data, (contour*) j->data,
-			    &curmaxdist);
+                            &curmaxdist);
       if(maxdist < curmaxdist) {
-	maxdist = curmaxdist;
+        maxdist = curmaxdist;
       }
 
       j2i = getContoursDist((contour*) j->data, (contour*) i->data,
-			    &curmaxdist);
+                            &curmaxdist);
       if(maxdist < curmaxdist) {
-	maxdist = curmaxdist;
+        maxdist = curmaxdist;
       }
 
       dm[c1ind][c2ind] = min(i2j,j2i);
@@ -436,9 +443,6 @@ double **getContourDistanceMatrix(list *slice1, list *slice2, long *m, long *n) 
 
   /* allocate the distance matrix */
   dm = (double**) malloc(*m*sizeof(double*));
-  if(dm == (double**) 0x0814f0d8) {
-    printf("here\n");
-  }
 
   for(ind = 0; ind < *m; ind++) {
     dm[ind] = (double*) malloc(*n*sizeof(double));
@@ -448,15 +452,15 @@ double **getContourDistanceMatrix(list *slice1, list *slice2, long *m, long *n) 
   for(i = getListNode(slice1,0), c1ind = 0; i; i = (listNode*) i->next, c1ind++) {
     for(j = getListNode(slice2,0), c2ind = 0; j; j = (listNode*) j->next, c2ind++) {
       i2j = getContoursDist((contour*) i->data, (contour*) j->data,
-			    &curmindist);
+                            &curmindist);
       if(isnan(mindist) && mindist > curmindist) {
-	mindist = curmindist;
+        mindist = curmindist;
       }
 
       j2i = getContoursDist((contour*) j->data, (contour*) i->data,
-			    &curmindist);
+                            &curmindist);
       if(isnan(mindist) && mindist > curmindist) {
-	mindist = curmindist;
+        mindist = curmindist;
       }
 
       dm[c1ind][c2ind] = min(i2j,j2i);
@@ -466,7 +470,7 @@ double **getContourDistanceMatrix(list *slice1, list *slice2, long *m, long *n) 
   for(c1ind = 0; c1ind < *m; c1ind++) {
     for(c2ind = 0; c2ind < *n; c2ind++) {
       if(isnan(dm[c1ind][c2ind])) {
-	dm[c1ind][c2ind] = mindist;
+        dm[c1ind][c2ind] = mindist;
       }
     }
   }
@@ -544,10 +548,10 @@ double getGlobalConnectionThresholdDensity(list *dms, list *ms, list *ns) {
     for(j = 0; j < n; j++) {
       d = fabs(x[i] - x[j]);
       if(d < bw) {
-	nx[numNeigh] = x[j];
-	ny[numNeigh] = pdf[j];
-	nw[numNeigh] = 1-(d/bw)*(d/bw);
-	numNeigh++;
+        nx[numNeigh] = x[j];
+        ny[numNeigh] = pdf[j];
+        nw[numNeigh] = 1-(d/bw)*(d/bw);
+        numNeigh++;
       }
     }
 
@@ -565,16 +569,16 @@ double getGlobalConnectionThresholdDensity(list *dms, list *ms, list *ns) {
   /* find the first rising zero crossing as the threshold */
   for(i = 1; i < n; i++) {
     if(!isnan(slope[i-1]) && !isnan(slope[i])
-	      && slope[i-1] < 0 && slope[i] >= 0) {
-      connectionThreshold = x[i-1] 
-	- slope[i-1]*(x[i-1]-x[i])/(slope[i-1]-slope[i]);
+       && slope[i-1] < 0 && slope[i] >= 0) {
+      connectionThreshold = x[i-1]
+        - slope[i-1]*(x[i-1]-x[i])/(slope[i-1]-slope[i]);
       //      connectionThreshold *= 1.5; // DELETE ME
       break;
     }
   }
 
   //if(SR_DEBUG) {
-  //fprintf(stderr,"connection threshold = %lf\n", connectionThreshold);  
+  //fprintf(stderr,"connection threshold = %lf\n", connectionThreshold);
   //}
 
   /* free stuff*/
@@ -677,7 +681,7 @@ double getGlobalConnectionThresholdKmeans(list *dms, list *ms, list *ns) {
  * to each other.
  */
 int correspondContoursKmeans(list *slice1, list* slice2, double **dm,
-			     int m, int n) {
+                             int m, int n) {
   int indi, indj;
   listNode *i, *j;
   contour *c1, *c2;
@@ -744,10 +748,10 @@ int correspondContoursKmeans(list *slice1, list* slice2, double **dm,
   for(i = getListNode(slice1,0), indi = 0; i; i = (listNode*) i->next, indi++) {
     for(j = getListNode(slice2,0), indj = 0; j; j = (listNode*) j->next, indj++) {
       if(clusters[n*indi+indj] == minMeanInd) {
-	c1 = (contour*) i->data;
-	c2 = (contour*) j->data;
+        c1 = (contour*) i->data;
+        c2 = (contour*) j->data;
 
-	enqueue(c1->adjacentContours,c2);
+        enqueue(c1->adjacentContours,c2);
       }
     }
   }
@@ -773,7 +777,7 @@ int correspondContoursKmeans(list *slice1, list* slice2, double **dm,
  * other. if there are multiple low distance contours, connect them all.
  */
 int correspondContoursHistogram(list *slice1, list* slice2, double **dm,
-				int m, int n) {
+                                int m, int n) {
   listNode *i, *j;
   int indi, indj, numBins = 10;
   histogram *hist = NULL;
@@ -821,15 +825,15 @@ int correspondContoursHistogram(list *slice1, list* slice2, double **dm,
 
     for(indi = 0; indi < hist->numBins; indi++) {
       if(!foundNonZero && hist->hist[indi] == 0) {
-	continue;
+        continue;
       }
       else if(hist->hist[indi] == 0) {
-	foundThresh = TRUE;
-	connectionThreshold = hist->minval + indi*hist->binSize + hist->binSize/2.0;
-	break;
+        foundThresh = TRUE;
+        connectionThreshold = hist->minval + indi*hist->binSize + hist->binSize/2.0;
+        break;
       }
       else {
-	foundNonZero = TRUE;
+        foundNonZero = TRUE;
       }
     }
   }
@@ -839,7 +843,7 @@ int correspondContoursHistogram(list *slice1, list* slice2, double **dm,
     fprintf(stderr,"threshold=%f\ndata:\t\tcluster:\n-----\t\t-------\n",connectionThreshold);
     for(i = getListNode(slice1,0), indi = 0; i; i = (listNode*) i->next, indi++) {
       for(j = getListNode(slice2,0), indj = 0; j; j = (listNode*) j->next, indj++) {
-	fprintf(stderr, "%2d: %5.5g\t%d\n", indi, dm[indi][indj], dm[indi][indj] >= connectionThreshold);
+        fprintf(stderr, "%2d: %5.5g\t%d\n", indi, dm[indi][indj], dm[indi][indj] >= connectionThreshold);
       }
     }
     fprintf(stderr,"\n");
@@ -849,10 +853,10 @@ int correspondContoursHistogram(list *slice1, list* slice2, double **dm,
   for(i = getListNode(slice1,0), indi = 0; i; i = (listNode*) i->next, indi++) {
     for(j = getListNode(slice2,0), indj = 0; j; j = (listNode*) j->next, indj++) {
       if(dm[indi][indj] < connectionThreshold) {
-	c1 = (contour*) i->data;
-	c2 = (contour*) j->data;
+        c1 = (contour*) i->data;
+        c2 = (contour*) j->data;
 
-	enqueue(c1->adjacentContours,c2);
+        enqueue(c1->adjacentContours,c2);
       }
     }
   }
@@ -901,15 +905,15 @@ double getGlobalConnectionThresholdHistogram(list *dms, list *ms, list *ns) {
 
     for(indi = 0; indi < hist->numBins; indi++) {
       if(!foundNonZero && hist->hist[indi] == 0) {
-	continue;
+        continue;
       }
       else if(hist->hist[indi] == 0) {
-	foundThresh = TRUE;
-	connectionThreshold = hist->minval + indi*hist->binSize + hist->binSize/2.0;
-	break;
+        foundThresh = TRUE;
+        connectionThreshold = hist->minval + indi*hist->binSize + hist->binSize/2.0;
+        break;
       }
       else {
-	foundNonZero = TRUE;
+        foundNonZero = TRUE;
       }
     }
   }
@@ -971,8 +975,8 @@ double getDistanceToContour(contour *c, vertex *v) {
   for(begPt = getListNode(c->vertices,0), endPt = getListNode(c->vertices,1);
       endPt; begPt = endPt, endPt = (listNode*) endPt->next) {
     curDist = getDistanceToSegment((vertex*) begPt->data,
-				   (vertex*) endPt->data,
-				   v);
+                                   (vertex*) endPt->data,
+                                   v);
 
     if(curDist < minDist) {
       minDist = curDist;
@@ -987,8 +991,8 @@ double getDistanceToContour(contour *c, vertex *v) {
  */
 double getDistanceToSegment(vertex *p1, vertex *p2, vertex *v) {
   double dv1, /* length from p2 to p1  */
-         dv2, /* length from v to p1 */
-         dv3; /* length from v to p2 */
+    dv2, /* length from v to p1 */
+    dv3; /* length from v to p2 */
 
   double theta; /* angle between the segments p2,p1 and p1,v */
   double r;     /* length down the segment for the perpenticular */
@@ -1039,8 +1043,8 @@ double getContoursDist(contour *cont1, contour *cont2, double *mindist) {
 
   /* iterate over vertices of the first contour, finding the minimum
      distance to the other contour
-     */
-  for(i = getListNode(cont1->vertices,0), ind = 0; i; 
+  */
+  for(i = getListNode(cont1->vertices,0), ind = 0; i;
       i = (listNode*) i->next, ind++) {
     u = (vertex*) i->data;
     distArr[ind] = getDistanceToContour(cont2,u);
@@ -1131,12 +1135,12 @@ void buildDataArray(list *dms, list* ms, list *ns, double **data, int *numDP) {
   /* get the data array */
   (*data) = (double*) malloc(*numDP*sizeof(double));
   for(dmln = getListNode(dms,0),
-	mln = getListNode(ms,0),
-	nln = getListNode(ns,0);
+        mln = getListNode(ms,0),
+        nln = getListNode(ns,0);
       dmln;
       dmln = (listNode*) dmln->next,
-	mln = (listNode*) mln->next,
-	nln = (listNode*) nln->next) {
+        mln = (listNode*) mln->next,
+        nln = (listNode*) nln->next) {
     dm = (double**) dmln->data;
     m  = (long) mln->data;
     n  = (long) nln->data;
@@ -1145,7 +1149,7 @@ void buildDataArray(list *dms, list* ms, list *ns, double **data, int *numDP) {
       (*data)[curDP] = dm[indi/n][indi%n];
 
       if(saveFP) {
-	fprintf(saveFP,"%0.9f ", (*data)[curDP]);
+        fprintf(saveFP,"%0.9f ", (*data)[curDP]);
       }
 
       curDP++;
@@ -1161,7 +1165,7 @@ void buildDataArray(list *dms, list* ms, list *ns, double **data, int *numDP) {
  * mask a data array, discarding data outside of the given percentiles
  */
 void maskPercentiles(double *data, int *numDatapoints,
-		     double minPercentile, double maxPercentile) {
+                     double minPercentile, double maxPercentile) {
   int i, minInd, maxInd, beginSkip = 0;
 
   /* remove nans */
@@ -1265,10 +1269,10 @@ histogram *buildHistogramDM(double **A, int m, int n, int numBins) {
   for(i = 0; i < m; i++) {
     for(j = 0; j < n; j++) {
       if(A[i][j] < hist->minval) {
-	hist->minval = A[i][j];
+        hist->minval = A[i][j];
       }
       if(A[i][j] > hist->maxval) {
-	hist->maxval = A[i][j];
+        hist->maxval = A[i][j];
       }
     }
   }
