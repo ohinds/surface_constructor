@@ -14,7 +14,7 @@
 #   both are the current directory.
 
 SRC = ./
-BIN = ../../../bin/
+BIN = $(HOME)/bin/
 
 # CC should be set to the name of your favorite C compiler.
 
@@ -92,7 +92,7 @@ RM = /bin/rm
 
 # The action starts here.
 
-all: $(BIN)triangle $(BIN)showme
+all: $(BIN)triangle
 
 trilibrary: $(BIN)triangle.o $(BIN)tricall
 

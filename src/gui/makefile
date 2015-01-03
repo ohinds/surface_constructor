@@ -14,16 +14,17 @@
 
 # suffix rule for subsidiary source files
 # (see http://www.gnu.org/manual/make/html_chapter/make_10.html#SEC111)
-$(OBJ_DIR)/%.o: %.c %.h 
+$(OBJ_DIR)/%.o: %.c %.h
 	@$(ECHO) '[make: building $@]'
-	$(CC) $(CFLAGS) -o $@ -c $< 
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 HDR_FILES = $(wildcard *.h)
 SRC_FILES = $(wildcard ./*.c)
 TMP_FILES = $(patsubst ./%,$(OBJ_DIR)/%,$(SRC_FILES))
-OBJ_FILES = $(TMP_FILES:.c=.o) 
+OBJ_FILES = $(TMP_FILES:.c=.o)
 
 default: $(OBJ_FILES)
+	cd external/triangle && make
 
 ############################### CLEAN ################################
 
@@ -37,4 +38,4 @@ clean:
 ### mode: makefile
 ### fill-column: 76
 ### comment-column: 0
-### End: 
+### End:

@@ -254,7 +254,8 @@ void setAdjacentContours(list *slices, double correspondenceThreshold,
       enqueue(c1->adjacentContours,c2);
 
       if(SR_DEBUG) {
-        fprintf(stderr,"only one contour on each slice, connecting them\n");
+        fprintf(stderr,"%d: only one contour on each slice, connecting them\n",
+                indi);
       }
 
       continue;

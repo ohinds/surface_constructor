@@ -524,10 +524,10 @@ void surfAction(int act) {
         deleteSliceContours(slices);
         redisplay();
         break;
-      case 'd': /* write the dataset to stdout */
-        writeDataset(curDataset, stdout);
-        fflush(stdout);
-        break;
+      /* case 'd': /\* write the dataset to stdout *\/ */
+      /*   writeDataset(curDataset, stdout); */
+      /*   fflush(stdout); */
+      /*   break; */
       case 'p': /* print the screen */
         screenCapture(curSlice);
         break;
