@@ -2,8 +2,8 @@
  * reconFromSlices.c performs a surface reconstruction from a given
  * slice contour file.
  *
- * Oliver Hinds <oph@bu.edu> 2006-04-19 
- * 
+ * Oliver Hinds <oph@bu.edu> 2006-04-19
+ *
  *
  *
  *****************************************************************************/
@@ -18,8 +18,8 @@
 #include<tile.h>
 
 /** filename vars **/
-static char 
-  slice_fname[255] = "",
+static char
+slice_fname[255] = "",
   slicelab_fname[255] = "",
   surf_fname[255]  = "",
   executeName[255] = "";
@@ -42,7 +42,7 @@ static int doFillHoles = TRUE;
 #include <unistd.h>
 
 int getopt(int argc, char * const argv[],
-		   const char *optstring);
+           const char *optstring);
 
 extern char *optarg;
 extern int optind, opterr, optopt;
@@ -51,8 +51,8 @@ extern int optind, opterr, optopt;
 #include <getopt.h>
 
 int getopt_long(int argc, char * const argv[],
-				const char *optstring,
-				const struct option *longopts, int *longindex);
+                const char *optstring,
+                const struct option *longopts, int *longindex);
 
 
 /**
@@ -72,18 +72,18 @@ void printUsage(void) {
   fprintf(stdout, "\n");
 
   /* print usage */
-  fprintf(stdout, "Usage: %s [OPTIONS] <slicefile> [<surffile>]\n", 
-	  executeName);
+  fprintf(stdout, "Usage: %s [OPTIONS] <slicefile> [<surffile>]\n",
+          executeName);
 
-  fprintf(stdout, "\nOPTIONS:\n");  
+  fprintf(stdout, "\nOPTIONS:\n");
 
-  fprintf(stdout, "\nGENERAL OPTIONS:\n");  
+  fprintf(stdout, "\nGENERAL OPTIONS:\n");
 
   fprintf(stdout, "  -V, --verbose             turn on verbose messages\n");
   fprintf(stdout, "  -h, --help                display this help and exit\n");
   fprintf(stdout, "  -?                        display this help and exit\n");
 
-  fprintf(stdout, "\nPREPROCESSING OPTIONS:\n");  
+  fprintf(stdout, "\nPREPROCESSING OPTIONS:\n");
 
   fprintf(stdout, "  -r, --resamplecontours      whether to resample input contours (default 1)\n");
   fprintf(stdout, "  -R, --resamplecontoursequal resample input contours, creating vertex spacing \n");
@@ -95,7 +95,7 @@ void printUsage(void) {
   fprintf(stdout, "                              absolute (default 0).\n");
 
 
-  fprintf(stdout, "\nCORRESPONDENCE OPTIONS:\n");  
+  fprintf(stdout, "\nCORRESPONDENCE OPTIONS:\n");
 
   fprintf(stdout, "  -C, --correspond          don't reconstruct, only correspond (with -s)\n");
   fprintf(stdout, "  -c, --correspondmethod    method to use for correspondence. \n\t\t\t\tcan be d,h,k (density, histogram, kmeans, none)\n");
@@ -109,11 +109,11 @@ void printUsage(void) {
   fprintf(stdout, "  -f, --distancefile        name of file to save the distances between contours\n");
 
 
-  fprintf(stdout, "\nBRANCHING OPTIONS:\n");  
+  fprintf(stdout, "\nBRANCHING OPTIONS:\n");
   fprintf(stdout, "  -q, --cliqueradius        number of neighbors on either side of vertex to \n\t\t\t\tconsider in liklihood estimation \n\t\t\t\tduring branching (default 4)\n");
 
 
-  fprintf(stdout, "\nTILING OPTIONS:\n");  
+  fprintf(stdout, "\nTILING OPTIONS:\n");
 
   fprintf(stdout, "  -M, --minind\t\t\tminimum slice index for reconstruction\n");
   fprintf(stdout, "  -X, --maxind\t\t\tmaximum slice index for reconstruction\n");
@@ -179,7 +179,7 @@ void parseArgs(int argc, char **argv) {
   /* loop through input arguments */
   while(1) {
     opt = getopt_long (argc, argv, "r:R:a:A:c:p:P:S:t:m:#:M:X:q:sd:D:i:I:e:E:gf:k:CTFH:l:hV?",
-		       long_options, &option_index);
+                       long_options, &option_index);
 
     if(opt == -1)
       break;
@@ -195,136 +195,136 @@ void parseArgs(int argc, char **argv) {
     }
 
     switch(opt) {
-    case 'r':
-      lower(optarg);
-      resample = (atoi(optarg) != 0 && strcmp(optarg,"false"));
-      break;
-    case 'R':
-      resampleEqual = (atoi(optarg) != 0 && strcmp(optarg,"false"));
-      resample = TRUE;
-      break;
-    case 'a':
-      resampleDistance = atof(optarg);
-      resampleEqual = FALSE;
-      break;
-    case 'A':
-      resampleAbs = (atoi(optarg) != 0 && strcmp(optarg,"false"));
-      resampleEqual = FALSE;
-      break;
-    case 'c':
-      if(!strcmp(optarg,"h") || !strcmp(optarg,"histogram")) {
-	correspondenceMethod = HISTOGRAM;
-      }
-      else if(!strcmp(optarg,"k") || !strcmp(optarg,"kmeans")) {
-	correspondenceMethod = KMEANS;
-      }
-      else {
-	dontCorrespond = TRUE;
-      }
-      break;
-    case 'p':
-      minPercentile = atof(optarg);
-      break;
-    case 'P':
-      maxPercentile = atof(optarg);
-      break;
-    case 't':
-      corrThresh = atof(optarg);
-      dontCorrespond = TRUE;
-      manualThreshold = TRUE;
-      break;
-    case 'm':
-      correspondenceNumMeans = atoi(optarg);
-      break;
-    case '#':
-      skipSlices = atoi(optarg);
-      break;
-    case 'M':
-      minSliceInd = atoi(optarg);
-      break;
-    case 'X':
-      maxSliceInd = atoi(optarg);
-      break;
-    case 'q':
-      cliqueRadius = atoi(optarg);
-      break;
-    case 'd':
-      lower(optarg);
-      testAngles = (atoi(optarg) != 0 && strcmp(optarg,"false"));
-      break;
-    case 'D':
-      anglePenalty = atof(optarg);
-      testAngles = TRUE;
-      break;
-    case 'i':
-      lower(optarg);
-      testEdgeCrossing = (atoi(optarg) != 0 && strcmp(optarg,"false"));
-      break;
-    case 'I':
-      edgeCrossingPenalty = atof(optarg);
-      testEdgeCrossing = TRUE;
-      break;
-    case 'e':
-      lower(optarg);
-      testRepeat = (atoi(optarg) != 0 && strcmp(optarg,"false"));
-      break;
-    case 'E':
-      repeatedEdgePenalty = atof(optarg);
-      testRepeat = TRUE;
-      break;
-    case 's':
-      saveSlices = TRUE;
-      break;
-    case 'g':
-      saveContourDistances = TRUE;
-      break;
-    case 'f':
-      strcpy(contourDistancesFilename,optarg);
-      break;
-    case 'k':
-      if(!strcmp(optarg,"s") || !strcmp(optarg,"skeleton")) {
-	cappingMethod = TILE_SKELETON;
-      }
-      else if(!strcmp(optarg,"p") || !strcmp(optarg,"point")) {
-	cappingMethod = TILE_POINT;
-      }
-      else if(!strcmp(optarg,"t") || !strcmp(optarg,"triangulate")) {
-	cappingMethod = TRIANGULATE;
-      }
-      else {
-	cappingMethod = NO_CAPPING;
-      }
-      break;
-    case 'S':
-      if(!strcmp(optarg,"l") || !strcmp(optarg,"local")) {
-	correspondenceScope = LOCAL;
-      }
-      else if(!strcmp(optarg,"g") || !strcmp(optarg,"global")) {
-	correspondenceScope = GLOBAL;
-      }
-      break;
-    case 'C':
-      onlyCorrespond = TRUE;
-      break;
-    case 'T':
-      thresholdForCircularity = atof(optarg);
-      break;
-    case 'F': 
-      doFillHoles = FALSE;
-      break;
-//    case 'H': 
+        case 'r':
+          lower(optarg);
+          resample = (atoi(optarg) != 0 && strcmp(optarg,"false"));
+          break;
+        case 'R':
+          resampleEqual = (atoi(optarg) != 0 && strcmp(optarg,"false"));
+          resample = TRUE;
+          break;
+        case 'a':
+          resampleDistance = atof(optarg);
+          resampleEqual = FALSE;
+          break;
+        case 'A':
+          resampleAbs = (atoi(optarg) != 0 && strcmp(optarg,"false"));
+          resampleEqual = FALSE;
+          break;
+        case 'c':
+          if(!strcmp(optarg,"h") || !strcmp(optarg,"histogram")) {
+            correspondenceMethod = HISTOGRAM;
+          }
+          else if(!strcmp(optarg,"k") || !strcmp(optarg,"kmeans")) {
+            correspondenceMethod = KMEANS;
+          }
+          else {
+            dontCorrespond = TRUE;
+          }
+          break;
+        case 'p':
+          minPercentile = atof(optarg);
+          break;
+        case 'P':
+          maxPercentile = atof(optarg);
+          break;
+        case 't':
+          corrThresh = atof(optarg);
+          dontCorrespond = TRUE;
+          manualThreshold = TRUE;
+          break;
+        case 'm':
+          correspondenceNumMeans = atoi(optarg);
+          break;
+        case '#':
+          skipSlices = atoi(optarg);
+          break;
+        case 'M':
+          minSliceInd = atoi(optarg);
+          break;
+        case 'X':
+          maxSliceInd = atoi(optarg);
+          break;
+        case 'q':
+          cliqueRadius = atoi(optarg);
+          break;
+        case 'd':
+          lower(optarg);
+          testAngles = (atoi(optarg) != 0 && strcmp(optarg,"false"));
+          break;
+        case 'D':
+          anglePenalty = atof(optarg);
+          testAngles = TRUE;
+          break;
+        case 'i':
+          lower(optarg);
+          testEdgeCrossing = (atoi(optarg) != 0 && strcmp(optarg,"false"));
+          break;
+        case 'I':
+          edgeCrossingPenalty = atof(optarg);
+          testEdgeCrossing = TRUE;
+          break;
+        case 'e':
+          lower(optarg);
+          testRepeat = (atoi(optarg) != 0 && strcmp(optarg,"false"));
+          break;
+        case 'E':
+          repeatedEdgePenalty = atof(optarg);
+          testRepeat = TRUE;
+          break;
+        case 's':
+          saveSlices = TRUE;
+          break;
+        case 'g':
+          saveContourDistances = TRUE;
+          break;
+        case 'f':
+          strcpy(contourDistancesFilename,optarg);
+          break;
+        case 'k':
+          if(!strcmp(optarg,"s") || !strcmp(optarg,"skeleton")) {
+            cappingMethod = TILE_SKELETON;
+          }
+          else if(!strcmp(optarg,"p") || !strcmp(optarg,"point")) {
+            cappingMethod = TILE_POINT;
+          }
+          else if(!strcmp(optarg,"t") || !strcmp(optarg,"triangulate")) {
+            cappingMethod = TRIANGULATE;
+          }
+          else {
+            cappingMethod = NO_CAPPING;
+          }
+          break;
+        case 'S':
+          if(!strcmp(optarg,"l") || !strcmp(optarg,"local")) {
+            correspondenceScope = LOCAL;
+          }
+          else if(!strcmp(optarg,"g") || !strcmp(optarg,"global")) {
+            correspondenceScope = GLOBAL;
+          }
+          break;
+        case 'C':
+          onlyCorrespond = TRUE;
+          break;
+        case 'T':
+          thresholdForCircularity = atof(optarg);
+          break;
+        case 'F':
+          doFillHoles = FALSE;
+          break;
+//    case 'H':
 //      numHolesLeft = atoi(optarg);
 //      break;
-    case 'l':
-      strcpy(slicelab_fname,optarg);
-      break;
-    case 'V':
-      SR_VERBOSE = TRUE;
-      break;
-    case 'h': case '?':
-      printUsage();
-      exit(EXIT_SUCCESS);
-      break;
+        case 'l':
+          strcpy(slicelab_fname,optarg);
+          break;
+        case 'V':
+          SR_VERBOSE = TRUE;
+          break;
+        case 'h': case '?':
+          printUsage();
+          exit(EXIT_SUCCESS);
+          break;
     }
   }
 
@@ -361,7 +361,7 @@ void parseArgs(int argc, char **argv) {
   else {
     strcpy(surf_fname,argv[optind+1]);
   }
-  
+
 }
 
 
@@ -421,8 +421,8 @@ int main(int argc, char **args) {
 
   if(surf->manifoldness == SURF_MANIFOLD) {
     fprintf(stdout,"surface is manifold with %d connected components\n",
-	    listSize(surf->CC));
-  } 
+            listSize(surf->CC));
+  }
   else {
     fprintf(stdout,"surface is not manifold\n");
   }
@@ -441,9 +441,9 @@ int main(int argc, char **args) {
 }
 
 /************************************************************************
-*** $Source: /home/cvs/PROJECTS/SurfaceReconstructionLibrary/reconFromSlices/reconFromSlices.c,v $
-*** Local Variables:
-*** mode: c
-*** fill-column: 76
-*** End:
-************************************************************************/
+ *** $Source: /home/cvs/PROJECTS/SurfaceReconstructionLibrary/reconFromSlices/reconFromSlices.c,v $
+ *** Local Variables:
+ *** mode: c
+ *** fill-column: 76
+ *** End:
+ ************************************************************************/
