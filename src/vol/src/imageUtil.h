@@ -3,7 +3,7 @@
  * for libvp
  * Oliver Hinds <oph@bu.edu> 2005-04-12
  *
- * 
+ *
  *
  *****************************************************************************/
 
@@ -26,6 +26,16 @@ image *createImage(int width, int height, int numChannels);
  * free an image struct
  */
 void freeImage(image *img);
+
+/**
+ * Set a pixel value
+ */
+void setPixelValue(image *img, int x, int y, unsigned short val);
+
+/**
+ * Get a pixel value
+ */
+unsigned short getPixelValue(image *img, int x, int y);
 
 /** image resizing functions **/
 
@@ -105,7 +115,7 @@ int changeImageBrightness(image *img, float adj);
 int changeImageContrast(image *img, float adj);
 
 /**
- * checks if two images are "compatible" 
+ * checks if two images are "compatible"
  */
 int imagesCompatible(image *img1, image *img2);
 
@@ -148,4 +158,3 @@ void flattenImage(image* img);
  * comment-column: 0
  * End:
  ********************************************************************/
-

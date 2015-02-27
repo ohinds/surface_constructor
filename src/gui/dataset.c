@@ -321,6 +321,7 @@ dataset *readDataset(char *filename) {
   /* open the file */
   if(!(fp = fopen(str,"r"))) {
     fprintf(stderr,"error: couldn't open file %s for reading. exit\n", str);
+    return NULL;
   }
 
   /* allocate space for the dataset to be read and some of its lists */
@@ -410,7 +411,7 @@ dataset *readDataset(char *filename) {
 
   /* read the number of slices we have actions for */
   fscanf(fp, "\n\nslices tacked: %d\n", &numTackedSlices);
-  fprintf(stdout, "reading %d tack lists...", numTackedSlices);
+  fprintf(stdout, "reading %d tack lists...\n", numTackedSlices);
 
   /* read in each set of tacks */
   for(i = 0; i < numTackedSlices; i++) {
@@ -477,7 +478,9 @@ dataset *readDataset(char *filename) {
     fscanf(fp, " adjacency\n%s", str);
 
     /* until no more slices */
+    i = 0;
     while(!strcmp(str,"slice")) {
+      i++;
       curCt = 0;
       fscanf(fp, "%s", str);
 

@@ -18,10 +18,11 @@
 static image *imgBuf;
 static quadri imgBounds;
 static GLuint tex;
+static image *segImg;
 static GLuint segTex;
 
 /* the seeds */
-static sliceSeeds *seeds;
+static sliceSeeds *seeds = NULL;
 static image *fgSeeds = NULL;
 static image *bgSeeds = NULL;
 static image *overlapSeeds = NULL;
@@ -36,7 +37,10 @@ static int shiftDown = FALSE;
 static int altDown = FALSE;
 
 /* draw sizes for paintbrush in pixels */
-float brushRadius = 4;
+static float brushRadius = 4;
+
+/* start location of clear path */
+static pixelLocation *clearPathStart = NULL;
 
 /******************************************************
  * functions
@@ -145,7 +149,7 @@ void buildSegTex(image *segImage) {
         segTexImage->pixels[subToInd3D(row, col, 1, segTexImage)] = USHRT_MAX;
         segTexImage->pixels[subToInd3D(row, col, 2, segTexImage)] = 0;
         segTexImage->pixels[subToInd3D(row, col, 3, segTexImage)] =
-          0.2 * USHRT_MAX;
+          0.1 * USHRT_MAX;
       }
       else {
         for (chan = 0; chan < 4; chan++) {
@@ -159,6 +163,118 @@ void buildSegTex(image *segImage) {
   freeImage(segTexImage);
 }
 
+int outOfRange(pixelLocation *v, image *img) {
+  return v->col < 0 || v->col >= img->width || v->row < 0 || v->row >= img->height;
+}
+
+void clearPathInSegImage(image *segImage,
+                         pixelLocation *start, pixelLocation *end) {
+  list *vertexHeap = newList(MINHEAP);
+  image *closed = createImage(segImage->width, segImage->height, 1);
+  image *predecessor_row = createImage(segImage->width, segImage->height, 1);
+  image *predecessor_col = createImage(segImage->width, segImage->height, 1);
+  double *distance = (double*) calloc(segImage->width * segImage->height,
+                                      sizeof(double));
+
+  const int NUM_NEIGHBORS = 8;
+  const int NEIGHBOR_MAP [8][2] = {
+    { -1,  0 },
+    { -1, -1 },
+    {  0, -1 },
+    {  1, -1 },
+    {  1,  0 },
+    {  1,  1 },
+    {  0,  1 },
+    { -1,  1 }
+  };
+
+  int i, curDist, neighborDist, thisDist;
+  pixelLocation *neighbor;
+  listNode *curNode = NULL;
+  pixelLocation *cur = (pixelLocation*) malloc(sizeof(pixelLocation));
+
+  image* sliceImg = NULL;
+  if(curDataset->imageSource == VP_VOLUME) {
+    curDataset->vol->selectedVoxel[curDataset->vol->sliceDir] = curSlice;
+    sliceImg = sliceVolume(curDataset->vol,0,curDataset->vol->sliceDir,0);
+  }
+  else {
+    sliceImg = imgBuf;
+  }
+
+  *cur = *start;
+  insertHeapNode(vertexHeap, 0, cur);
+
+  while (listSize(vertexHeap) > 0) {
+    curNode = getHeapTop(vertexHeap);
+    cur = (pixelLocation*) curNode->data;
+    curDist = distance[subToInd2D(cur->row, cur->col, segImage)];
+
+    // check if we are done
+    if (cur->row == end->row && cur->col == end->col) {
+      break;
+    }
+
+    // expand neighbors
+    for (i = 0; i < NUM_NEIGHBORS; i++) {
+      neighbor = (pixelLocation*) malloc(sizeof(pixelLocation));
+      neighbor->row = cur->row + NEIGHBOR_MAP[i][0];
+      neighbor->col = cur->col + NEIGHBOR_MAP[i][1];
+
+      neighborDist =
+        distance[subToInd2D(neighbor->row, neighbor->col, segImage)];
+
+      if (outOfRange(neighbor, segImage) ||
+          getPixelValue(closed, neighbor->row, neighbor->col)) {
+        continue;
+      }
+
+      thisDist = getPixelValue(sliceImg, neighbor->row, neighbor->col);
+
+      if (neighborDist == 0 || thisDist + curDist < neighborDist) {
+        setPixelValue(predecessor_row, neighbor->row, neighbor->col, cur->row);
+        setPixelValue(predecessor_col, neighbor->row, neighbor->col, cur->col);
+
+        distance[subToInd2D(neighbor->row, neighbor->col, segImage)] =
+          thisDist + curDist;
+
+        insertHeapNode(vertexHeap, thisDist + curDist,
+                       neighbor);
+      }
+    }
+
+    setPixelValue(closed, cur->row, cur->col, 1);
+  }
+
+  if (cur->row != end->row || cur->col != end->col) {
+    fprintf(stderr, "ERROR: no path from start to end found\n");
+    return;
+  }
+
+  // follow path, clearing seg image along it
+  while (cur->row != start->row || cur->col != start->col) {
+    if (cur->row == 0 && cur->col == 0) {
+      return;
+    }
+
+    bgSeeds->pixels[subToInd3D(cur->col,
+                               cur->row, 2, bgSeeds)] = USHRT_MAX;
+    bgSeeds->pixels[subToInd3D(cur->col,
+                               cur->row, 3, bgSeeds)] = USHRT_MAX;
+
+    pixelLocation next;
+    next.row = getPixelValue(predecessor_row, cur->row, cur->col);
+    next.col = getPixelValue(predecessor_col, cur->row, cur->col);
+    *cur = next;
+  }
+
+  freeList(vertexHeap);
+  freeImage(closed);
+  freeImage(predecessor_row);
+  freeImage(predecessor_col);
+  free(distance);
+}
+
 /****** END LOCALLY USED FUNCTIONS ********/
 
 /**
@@ -166,7 +282,6 @@ void buildSegTex(image *segImage) {
  */
 void seedImgInit() {
   image *img;
-  image *segImg;
 
   /* validate the curSlice */
   curSlice %= curDataset->numSlices;
@@ -334,6 +449,33 @@ void seedDraw() {
     }
 
     glDisable(textureMethod);
+
+    if (clearPathStart != NULL) {
+      glColor3f(0, 1, 0);
+
+      vertex start;
+      start.x = clearPathStart->col;
+      start.y = clearPathStart->row;
+
+      quad = gluNewQuadric();
+      gluQuadricDrawStyle(quad, GLU_FILL);
+      vertex v = getWindowCoordsVert(start);
+
+      /* draw an annulus */
+      glTranslated(v.x, v.y,0);
+      gluDisk(quad,tackInnerRadius,tackWidth,20,1);
+      glTranslated(-v.x, -v.y,0);
+
+      /* make a tiny point */
+      glPointSize(1);
+      glBegin(GL_POINTS); {
+        glVertex3d(v.x, v.y, 0);
+      } glEnd();
+
+      gluDeleteQuadric(quad);
+
+    }
+
   }
 
   /* build the mode string */
@@ -350,6 +492,12 @@ void runSegmentation() {
   strcpy(seg_filename, curDataset->vol->filename);
   // TODO: hack, fixme
   strcpy(&seg_filename[strlen(seg_filename) - 4], "_seg.mgh");
+
+  if (getenv("SURFACE_CONSTRUCTOR_HOME") == NULL) {
+    fprintf(stderr, "ERROR: the env var SURFACE_CONSTRUCTOR_HOME must "
+            "be set to run segmentation!\n");
+    return;
+  }
 
   sprintf(command, "matlab -nosplash -nodisplay -r \"addpath(genpath('%s')); "
           "random_walker_mri('%s', '%s', '%s', %d:%d); exit\"",
@@ -491,6 +639,29 @@ void seedKeyboard(unsigned char key, int x, int y) {
  * mouse handler determines what kind of actions are being performed
  */
 void mouseHandler(vector mousePos) {
+  // middle button defines path clearing points
+  if (buttonDown == GLUT_MIDDLE_BUTTON) {
+    if (clearPathStart == NULL) {
+      clearPathStart = (pixelLocation*) malloc(sizeof(vector));
+      clearPathStart->col = rint(mousePos.x);
+      clearPathStart->row = rint(mousePos.y);
+    }
+    else {
+      pixelLocation end;
+      end.col = rint(mousePos.x);
+      end.row = rint(mousePos.y);
+
+      clearPathInSegImage(segImg, clearPathStart, &end);
+      free(clearPathStart);
+      clearPathStart = NULL;
+    }
+
+    redisplay();
+
+    return;
+  }
+
+  // left button defines seed drawing
   int fg = !controlDown;
 
   if(!shiftDown)  { /* add a new seed */
