@@ -28,6 +28,7 @@ static image *bgSeeds = NULL;
 static image *overlapSeeds = NULL;
 static int showSeeds = TRUE;
 static int showSeg = TRUE;
+static int showTacks = TRUE;
 
 /* mouse modifier state */
 #define GLUT_NO_BUTTON (GLUT_MIDDLE_BUTTON + 3)
@@ -416,6 +417,8 @@ void drawTexture() {
  * do seed specific drawing
  */
 void seedDraw() {
+  listNode *i, *j;
+
   GLenum textureMethod = getTextureMethod();
 
   /* build seed textures */
@@ -457,7 +460,7 @@ void seedDraw() {
       start.x = clearPathStart->col;
       start.y = clearPathStart->row;
 
-      quad = gluNewQuadric();
+      GLUquadricObj *quad = gluNewQuadric();
       gluQuadricDrawStyle(quad, GLU_FILL);
       vertex v = getWindowCoordsVert(start);
 
@@ -474,6 +477,29 @@ void seedDraw() {
 
       gluDeleteQuadric(quad);
 
+    }
+
+    /* draw tacks, if we should */
+    if (showTacks) {
+      glColor4f(0.5, 1, 0.5, 0.5);
+
+      GLUquadricObj *quad = gluNewQuadric();
+      gluQuadricDrawStyle(quad, GLU_FILL);
+
+      list *l = (list*)getListNode(
+        curDataset->sliceContourLists,curSlice)->data;
+      for(i = getListNode(l,0); i; i = (listNode*) i->next) {
+        list *cList = ((contour*)i->data)->vertices;
+        for(j = getListNode(cList,0); j; j = (listNode*) j->next) {
+          vertex *t = (vertex*) j->data;
+          vertex v = getWindowCoordsVert(*t);
+          glTranslated(v.x, v.y,0);
+          gluDisk(quad,tackInnerRadius,tackWidth,20,1);
+          glTranslated(-v.x, -v.y,0);
+        }
+      }
+
+      gluDeleteQuadric(quad);
     }
 
   }
