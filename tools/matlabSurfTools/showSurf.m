@@ -74,10 +74,10 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
       vertexFaceColor(find(vertexFaceColor < 0)) = 0;
     else
       for(f=1:size(surfStruct.faces,1))
-	l = surfStruct.vertexLabels(surfStruct.faces(f,:));
-	if(isempty(find(l == -1)) & l(1) == l(2) & l(2) == l(3))
-	  vertexFaceColor(f,2:3) = vertexFaceColor(f,2:3) - labelColorMod;
-	end
+        l = surfStruct.vertexLabels(surfStruct.faces(f,:));
+        if(isempty(find(l == -1)) & l(1) == l(2) & l(2) == l(3))
+          vertexFaceColor(f,2:3) = vertexFaceColor(f,2:3) - labelColorMod;
+        end
       end
       vertexFaceColor(find(vertexFaceColor < 0)) = 0;
     end
@@ -86,10 +86,10 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
 
   % patch whatever vertices are left over
   h = patch('vertices', surfStruct.vertices, ...
-	    'faces', surfStruct.faces, ...
-	    'facevertexcdata', vertexFaceColor, ...
-	    'facecolor', 'flat', ...
-	    'edgecolor', 'black');
+            'faces', surfStruct.faces, ...
+            'facevertexcdata', vertexFaceColor, ...
+            'facecolor', 'flat', ...
+            'edgecolor', 'none');
   axis off;
   axis vis3d;
   axis equal;
@@ -97,12 +97,12 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
   material dull
   camlight;
   cameratoolbar;
-return
+ return
 
-%************************************************************************%
-%%% $Source: /home/cvs/PROJECTS/SurfaceConstructor/tools/matlabSurfTools/showSurf.m,v $
-%%% Local Variables:
-%%% mode: Matlab
-%%% fill-column: 76
-%%% comment-column: 0
-%%% End:
+ %************************************************************************%
+ %%% $Source: /home/cvs/PROJECTS/SurfaceConstructor/tools/matlabSurfTools/showSurf.m,v $
+ %%% Local Variables:
+ %%% mode: Matlab
+ %%% fill-column: 76
+ %%% comment-column: 0
+ %%% End:

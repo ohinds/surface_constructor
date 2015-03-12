@@ -7,21 +7,21 @@
 % TY is translation vertically
 % R  is rotation
 % S  is scale
-% 
+%
 % Oliver Hinds <oph@bu.edu>
 % 2005-05-04
 
 function ellipse = fitEllipse(surfStruct,r0,a0,b0,tx0,ty0)
 
-  if(nargin == 2)
+  if(nargin < 3)
     surfStruct = extractpatchCC(extractpatchQ(surfStruct,find(surfStruct.vertexLabels==1)));
     r0 = [];
   end
-  
-  
+
+
   weight = 0;
   upsample = 0;
-  
+
   if(~isstruct(surfStruct))
     coords = surfStruct;
     [v,e] = eig(cov(coords));
@@ -33,12 +33,12 @@ function ellipse = fitEllipse(surfStruct,r0,a0,b0,tx0,ty0)
     end
     [v,e] = eig(cov(surfStruct.vertices(:,1:2)));
   end
-  
+
   % do an eigenanalysis to find best initial parameters
   [v,e] = eig(cov(coords));
   e = diag(e);
   [trash, mxind] = max(e);
-  
+
 %   mn = min(coords);
 %   mx = max(coords);
 %   ord = sort((mx-mn)/3,1,'descend');
@@ -51,7 +51,7 @@ function ellipse = fitEllipse(surfStruct,r0,a0,b0,tx0,ty0)
     elseif(r0 > 3*pi/2)
       r0 = r0 - pi;
     end
-  end  
+  end
 
   if(nargin < 3 | a0 == [])
     a0 = ord(1);
@@ -68,16 +68,16 @@ function ellipse = fitEllipse(surfStruct,r0,a0,b0,tx0,ty0)
   if(nargin < 6 | ty0 == [])
     ty0 = mean(coords(:,2));
   end
-  
-  
+
+
   % construct vectors for parameters
   x0 = [a0,b0,tx0,ty0,r0]; % initial model parameters
 
   if(weight)
     [wgrid, wmapx, wmapy] = get_wgrid(coords,2);
   end
-  
-%   figure,set(gcf,'doublebuffer','on');  
+
+%   figure,set(gcf,'doublebuffer','on');
 %   plot(coords(:,1), coords(:,2),'.');
 %   hold on
 %   plot_ellipse(a0,b0,tx0,ty0,r0,'r');
@@ -90,18 +90,18 @@ function ellipse = fitEllipse(surfStruct,r0,a0,b0,tx0,ty0)
     [x,fval,flag,out] = fminsearch(@ellipseErr,x0,opt,coords);
     [res] = ellipseErr(x,coords);
   end
-  
+
   % check the error flag
-  if(flag < 0) 
+  if(flag < 0)
     fprintf('error: fminsearch did not converge\n');
-  elseif(flag == 0) 
+  elseif(flag == 0)
     fprintf('error: fminsearch exceeded the max number of iterations\n');
   else % if success, print some info
     fprintf(['success: the %s algorithm performed %d function' ...
 	    ' evaluations using %d iterations\n'], out.algorithm, ...
 	    out.funcCount, out.iterations);
   end
-  
+
   ellipse.a = x(1);
   ellipse.b = x(2);
   ellipse.tx = x(3);
@@ -110,4 +110,3 @@ function ellipse = fitEllipse(surfStruct,r0,a0,b0,tx0,ty0)
   ellipse.e = res;
 
 return;
-

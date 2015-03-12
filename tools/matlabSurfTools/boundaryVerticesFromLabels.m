@@ -22,7 +22,7 @@ function bv = boundaryVerticesFromLabels(surfStruct,ordered)
     for(i=length(bv):-1:1)
       n = neighborsQ(surfStruct,bv(i));
       if(isempty(find(surfStruct.vertexLabels(n) ~= 1)))
-	bv(i) = [];
+        bv(i) = [];
       end
     end
 

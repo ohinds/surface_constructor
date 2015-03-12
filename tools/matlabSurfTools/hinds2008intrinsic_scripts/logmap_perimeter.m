@@ -20,6 +20,10 @@ if(nargin > 3)
   alpha1 = varargin{3};
 end
 
+if(nargin > 4)
+  k = varargin{4};
+end
+
 
 ecc_parafovea  =  16;         % extent of visual field eccentricity
 ecc_periphery  =  64;         % extent of visual field eccentricity
@@ -361,7 +365,7 @@ function w = wedgedipole(z, a, b, alpha1)
 % WEDGEDIPOLE  wedge-dipole mapping function
 %
 % W = WEDGEDIPOLE(Z, A, B, ALPHA1)
-  
+
 % ( based on wedge_dipole.m by mukundb )
 % jonathan polimeni <jonnyreb@athlete-2.bu.edu>, 10/22/2002
 % $Id: logmap_perimeter.m,v 1.4 2006/02/16 18:44:22 oph Exp $
