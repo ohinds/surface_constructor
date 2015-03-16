@@ -66,6 +66,20 @@ function [tx, ty, r, a, b, alpha, k] = fitWedgeDipoleBoundary(surfStruct)
   b = 80;
   alpha = 0.8;
 
+
+  [h, dipole_boundary] = logmap_perimeter(a, b, alpha, k, 0);
+  dipole_boundary = [real(dipole_boundary); imag(dipole_boundary)]';
+
+  R = [cos(r), -sin(r);
+       sin(r),  cos(r)];
+  rot_dipole = R * dipole_boundary';
+  rot_dipole = rot_dipole';
+
+  trans_dipole = rot_dipole + [repmat(tx, size(rot_dipole, 1), 1), repmat(ty, size(rot_dipole, 1), 1)];
+
+  plot(coords(:, 1), coords(:, 2)); hold on; plot(trans_dipole(:, 1), trans_dipole(:, 2));
+
+
 return
 
 function err = dipoleErr(x, coords)
@@ -103,9 +117,6 @@ function err = dipoleErr(x, coords)
   end
 
   err = median(dists);
-
-  close all;
-  plot(coords(:, 1), coords(:, 2)); hold on; plot(trans_dipole(:, 1), trans_dipole(:, 2));
 
 return
 

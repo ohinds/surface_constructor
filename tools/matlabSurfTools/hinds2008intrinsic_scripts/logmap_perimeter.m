@@ -29,19 +29,7 @@ function [h boundary] = logmap_perimeter(varargin)
   end
 
   if(nargin >= 5)
-    tx = varargin{5};
-  end
-
-  if(nargin >= 6)
-    ty = varargin{6};
-  end
-
-  if(nargin >= 7)
-    r = varargin{7};
-  end
-
-  if(nargin >= 8)
-    show_plot = varargin{8};
+    show_plot = varargin{5};
   end
 
   ecc_parafovea  =  16;         % extent of visual field eccentricity
@@ -97,7 +85,7 @@ function [h boundary] = logmap_perimeter(varargin)
   r_perimeter_polar = ( -B_polar - sqrt(B_polar.^2 - 4*A*C) ) / 2/A;
   z_perimeter_polar = r_perimeter_polar .* exp(i*theta_polar);
 
-  half_vertical_meridian = [linspace(0,-log10(a),N/30) logspace(log10(a),log10(ecc_periphery),N/4)];
+  half_vertical_meridian = [0 logspace(log10(0.03),log10(ecc_periphery),N/4)];
   z_vertical_meridian = i*[-fliplr(half_vertical_meridian) half_vertical_meridian(2:end)];
 
   z_periphery_subsampled = fliplr(z_perimeter_polar(round(linspace(1,length(z_perimeter_polar),2*log(N)))));
