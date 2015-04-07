@@ -68,6 +68,9 @@ function [tx, ty, r, a, b, alpha, k] = fitWedgeDipoleBoundary(surfStruct)
 
 
   [h, dipole_boundary] = logmap_perimeter(a, b, alpha, k, 0);
+
+  keyboard
+
   dipole_boundary = [real(dipole_boundary); imag(dipole_boundary)]';
 
   R = [cos(r), -sin(r);
