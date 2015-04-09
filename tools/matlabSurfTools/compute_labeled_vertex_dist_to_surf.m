@@ -12,6 +12,7 @@ function distances = compute_labeled_vertex_dist_to_surf(ref_surf, ...
       end
       fprintf('%3d%%', round(i / length(labels) * 100));
     end
+    fprintf('\n');
 
     closest_centroids = zeros(size(dest_surf.faces, 1), 1);
     for j=1:size(dest_surf.faces)

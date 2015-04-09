@@ -4,10 +4,27 @@
 %
 % [tx, ty, r, a, b, alpha, k] = FITWEDGEDIPOLEBOUNDARY(FLATSURF[,FIT_LABELS])
 
-function [tx, ty, r, a, b, alpha, k] = fitWedgeDipoleBoundary(surfStruct)
+function [tx, ty, r, a, b, alpha, k] = fitWedgeDipoleBoundary(subjs_dir, subj, hemi)
 
-  r0 = atan2(surfStruct.vertices(surfStruct.occVert,2) - surfStruct.vertices(surfStruct.antVert,2),...
-             surfStruct.vertices(surfStruct.occVert,1) - surfStruct.vertices(surfStruct.antVert,1));
+  if nargin < 3
+    hemi = '';
+  else
+    hemi = strcat('_', hemi);
+  end
+
+  path = strcat(subjs_dir, '/ex_vivo', subj, '/surfRecon');
+  load(strcat(path, '/display_ev', subj, hemi));
+  load(strcat(path, '/ant_vert', hemi, '.txt'));
+  load(strcat(path, '/occ_vert', hemi, '.txt'));
+
+  eval(strcat('surfStruct = flatSurf_ev', subj, hemi, ';'));
+  eval(strcat('surfStruct.antVert = ant_vert', hemi, ';'));
+  eval(strcat('surfStruct.occVert = occ_vert', hemi, ';'));
+
+  antCoord = surfStruct.vertices(surfStruct.antVert, :);
+  occCoord = surfStruct.vertices(surfStruct.occVert, :);
+
+  r0 = atan2(antCoord(2) - occCoord(2), antCoord(1) - occCoord(1));
 
   if(isfield(surfStruct, 'vertexLabels'))
     surfStruct = extractpatchCC(extractpatchQ(surfStruct,find(surfStruct.vertexLabels==1)));
@@ -28,24 +45,20 @@ function [tx, ty, r, a, b, alpha, k] = fitWedgeDipoleBoundary(surfStruct)
   coords = surfStruct.vertices(boundaryVertices(surfStruct),1:2);
 
   k0 = 20;
+  visual_perimeter = visualPerimeter();
+  dipole_boundary = wedgedipole(visual_perimeter, 0.6, 80, 0.8, 1, 1, k0, r0);
 
-  [h, dipole_boundary] = logmap_perimeter(0.6, 80, 0.8, k0, 0);
-  dipole_boundary = [real(dipole_boundary); imag(dipole_boundary)]';
+  keyboard
 
-  R = [cos(r0), -sin(r0);
-       sin(r0),  cos(r0)];
-  rot_dipole = R * dipole_boundary';
-  rot_dipole = rot_dipole';
-
-  tx0 = mean(coords(:, 1)) - mean(rot_dipole(:, 1));
-  ty0 = mean(coords(:, 2)) - mean(rot_dipole(:, 2));
+  t0 = occCoord(1) - real(dipole_boundary(1)) + i * occCoord(2) - imag(dipole_boundary(1));
+  dipole_boundary = dipole_boundary + t0;
 
   % construct vectors for parameters
-  x0 = [tx0, ty0, r0, k0]; % initial model parameters
+  x0 = [t0, r0, k0]; % initial model parameters
 
   opt = optimset('display','off');
-  [x,fval,flag,out] = fminsearch(@dipoleErr,x0,opt,coords);
-  [res] = dipoleErr(x,coords);
+  [x,fval,flag,out] = fminsearch(@dipoleErr, x0, opt, {coords, visual_perimeter});
+  [res] = dipoleErr(x, {coords, visual_perimeter});
 
   % check the error flag
   if(flag < 0)
@@ -58,65 +71,42 @@ function [tx, ty, r, a, b, alpha, k] = fitWedgeDipoleBoundary(surfStruct)
       out.funcCount, out.iterations);
   end
 
-  tx = x(1);
-  ty = x(2);
-  r = x(3);
-  k = x(4);
+  t = x(1);
+  r = x(2);
+  k = x(3);
   a = 0.6;
   b = 80;
   alpha = 0.8;
 
+  dipole = wedgedipole(visual_perimeter, a, b, alpha, 1, 1, k, r, t);
 
-  [h, dipole_boundary] = logmap_perimeter(a, b, alpha, k, 0);
+  plot(coords(:, 1), coords(:, 2)); hold on; plot(dipole);
+
+  fit_file = strcat(path, '/wedge_dipole_fit', hemi);
+  fprintf('saving parameters to %s.\n', fit_file);
+  save(fit_file, 't', 'r', 'k', 'a', 'b', 'alpha');
 
   keyboard
-
-  dipole_boundary = [real(dipole_boundary); imag(dipole_boundary)]';
-
-  R = [cos(r), -sin(r);
-       sin(r),  cos(r)];
-  rot_dipole = R * dipole_boundary';
-  rot_dipole = rot_dipole';
-
-  trans_dipole = rot_dipole + [repmat(tx, size(rot_dipole, 1), 1), repmat(ty, size(rot_dipole, 1), 1)];
-
-  plot(coords(:, 1), coords(:, 2)); hold on; plot(trans_dipole(:, 1), trans_dipole(:, 2));
-
-
 return
 
-function err = dipoleErr(x, coords)
+function err = dipoleErr(x, data)
 
-  BIG_ERR = 10000000;
+  coords = data{1};
+  visual_perimeter = data{2};
 
-  tx = x(1);
-  ty = x(2);
-  r = x(3);
-  k = x(4);
-
-  % sanity
-  if r > pi
-     err = BIG_ERR;
-     return
-  end
+  t = x(1);
+  r = x(2);
+  k = x(3);
 
   a = 0.6;
   b = 80;
   alpha = 0.8;
 
-  [h, dipole_boundary] = logmap_perimeter(a, b, alpha, k, 0);
-  dipole_boundary = [real(dipole_boundary); imag(dipole_boundary)]';
-
-  R = [cos(r), -sin(r);
-       sin(r),  cos(r)];
-  rot_dipole = R * dipole_boundary';
-  rot_dipole = rot_dipole';
-
-  trans_dipole = rot_dipole + [repmat(tx, size(rot_dipole, 1), 1), repmat(ty, size(rot_dipole, 1), 1)];
+  dipole_boundary = wedgedipole(visual_perimeter, a, b, alpha, 1, 1, k, r, t);
 
   dists = zeros(size(coords, 1), 1);
   for i=1:size(coords, 1)
-    dists(i) = findClosestVertDist(coords(i, :), trans_dipole);
+    dists(i) = findClosestVertDist(coords(i, :), dipole_boundary);
   end
 
   err = median(dists);
@@ -126,8 +116,8 @@ return
 function dist = findClosestVertDist(pt, verts)
 
   dist = inf;
-  for v=1:size(verts, 1)
-    d = norm(pt - verts(v, :));
+  for v=1:length(verts)
+    d = norm(pt - [real(verts(v)) imag(verts(v))]);
     if d < dist
        dist = d;
     end
