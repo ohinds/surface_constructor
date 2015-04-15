@@ -9,12 +9,12 @@
 export PROJECT = surfCon
 
 # operating system, mac, linux and win are supported
-export OS = linux
+export OS = mac
 
 # whether to compile with debug, optimize flags
-export DEBUG = 0
-export OPTIM = 1
-export STRIP = 1
+export DEBUG = 1
+export OPTIM = 0
+export STRIP = 0
 export PROF = 0
 export MEMLEAK = 0
 
@@ -49,8 +49,6 @@ VP_LIB_TYPE = static
 
 # jpeg includes and libs
 ifeq ($(OS),mac)
-	JPEG_INCS = -I$(FINK_ROOT)/sw/include
-	JPEG_LIBS = -L$(FINK_ROOT)/sw/lib -ljpeg
 else
 	JPEG_INCS = -I/usr/include
 	JPEG_LIBS = -L/usr/lib -ljpeg
@@ -117,14 +115,15 @@ else
 endif
 
 # flags for the compiler and linker
-export CINCL =  -I$(SRC_DIR) -I$(VOL_DIR)/src -I$(VOL_DIR)/src/dicom -I$(RECON_DIR)/src
-export CFLAGS = -Werror -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(JPEG_INCS) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL) -Wno-unused-but-set-variable -Wno-unused-result
-export LDFLAGS = $(PROF_FLAG) $(MEMLEAK_FLAG) $(LIBSR) $(LIBVP)  $(JPEG_LIBS) -lm -lgsl -lgslcblas -lz
+export CINCL =  -I$(SRC_DIR) -I$(VOL_DIR)/src -I$(VOL_DIR)/src/dicom -I$(RECON_DIR)/src -I/usr/local/Cellar/jpeg/8d/include/ -I/usr/local/Cellar/gsl/1.16
+export CFLAGS = -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(JPEG_INCS) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL)
+export LDFLAGS = $(PROF_FLAG) $(MEMLEAK_FLAG) $(LIBSR) $(LIBVP)  -lm -lz  /usr/local/Cellar/jpeg/8d/lib/libjpeg.a /usr/local/Cellar/gsl/1.16/lib/libgsl.a
 
 # differences between mac and *nix
 ifeq ($(OS),mac)
 	CFLAGS += -DMAC
-	LDFLAGS += -framework OpenGL -framework GLUT -lobjc
+	LDFLAGS += -framework OpenGL -framework GLUT -framework vecLIB 
+	#-lobjc
 else
 	CFLAGS +=  $(GL_INCS) $(X_INCS)
 	LDFLAGS += $(GL_LIBS) $(X_LIBS)

@@ -10,7 +10,7 @@ export MINOR_VER = 1
 export RELEASE_VER = 1
 
 # operating system, mac, linux and win are supported
-export OS = linux
+export OS = mac
 
 # whether to build a static or shared library
 export LIB_TYPE = static
@@ -54,8 +54,6 @@ ifeq ($(OS),mac)
 
 #	FINK_ROOT = /
 	LIB_TYPE = static
-	JPEG_INCS = -I$(FINK_ROOT)/sw/include
-	JPEG_LIBS = -L$(FINK_ROOT)/sw/lib -ljpeg
 else
 	JPEG_INCS = -I/usr/include
 	JPEG_LIBS = -L/usr/lib -ljpeg
@@ -91,9 +89,9 @@ ifeq ($(OS),linux)
 	export fPIC = -fPIC
 endif
 
-export CINCL =  -I$(SRC_DIR) -I$(SRC_DIR)/ljpg -I$(SRC_DIR)/dicom
-export CFLAGS = $(fPIC) -Werror -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(JPEG_INCS) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL) $(ENDIAN_FLAG) -Wno-unused-but-set-variable -Wno-unused-result
-export LDFLAGS = $(PROF_FLAG) $(JPEG_LIBS)
+export CINCL =  -I$(SRC_DIR) -I$(SRC_DIR)/ljpg -I$(SRC_DIR)/dicom  -I/usr/local/Cellar/jpeg/8d/include/ -I/usr/local/Cellar/gsl/1.16
+export CFLAGS = $(fPIC) -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(JPEG_INCS) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL) $(ENDIAN_FLAG)
+export LDFLAGS = $(PROF_FLAG) $(JPEG_LIBS) /usr/local/Cellar/jpeg/8d/lib/libjpeg.a /usr/local/Cellar/gsl/1.16/lib/libgsl.a
 
 # differences between mac and *nix
 ifeq ($(OS),mac)

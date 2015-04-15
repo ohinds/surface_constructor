@@ -11,7 +11,7 @@ export MINOR_VER = 1
 export RELEASE_VER = 0
 
 # operating system, mac, linux and win are supported
-export OS = linux
+export OS = mac	
 
 export BITS = 64
 
@@ -88,7 +88,7 @@ endif
 
 
 export CINCL =  -I$(SRC_DIR) -I$(VOL_DIR)/src
-export CFLAGS = $(fPIC) -Wall -Werror $(MEMLEAK_FLAG) $(PROF_FLAG) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL) -Wno-unused-but-set-variable -Wno-unused-result
+export CFLAGS = $(fPIC) -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) $(CINCL)
 export LDFLAGS = $(PROF_FLAG) $(LIBVP)
 
 # bits of platform
