@@ -12,7 +12,7 @@
 % Oliver Hinds <oph@bu.edu>
 % 2004-11-05
 
-function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabels,vcdata)
+function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabels,vcdata,vcinds)
   % check for args
   if(nargin < 1)
     fprintf('usage: handle = showSurf(surfStruct[,faceColor,faceAlpha,labelColors]');
@@ -31,7 +31,12 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
     showLabels = 0;
     showFaceCurvature = 0;
     showVertexCurvature = 0;
-    vertexFaceColor = vcdata;
+
+    vertexFaceColor = zeros(surfStruct.V, 1);
+    if(nargin < 5)
+      vcinds = 1:surfStruct.V;
+    end
+    vertexFaceColor(vcinds) = vcdata;
   else
     vcdataOverride = 0;
   end
@@ -58,7 +63,7 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
   else % if there is vertex coloring, convert it to face coloring
     fcdata = zeros(size(surfStruct.faces,1),1);
     for(f=1:size(surfStruct.faces,1))
-      fcdata(f) = min(vcdata(surfStruct.faces(f,:)));
+      fcdata(f) = min(vertexFaceColor(surfStruct.faces(f,:)));
     end
     vertexFaceColor = fcdata;
   end
