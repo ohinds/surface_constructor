@@ -591,7 +591,6 @@ void surfAction(int act) {
         prepareDatasetForSave(curDataset);
         slices = buildSlices(curDataset);
         preprocessSliceContours(slices);
-        buildCorrespondenceGuess(curDataset->sliceContourLists);
         surf = tileSlices(slices);
         fillBranchedHoles(surf);
 
