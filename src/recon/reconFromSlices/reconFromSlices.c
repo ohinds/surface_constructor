@@ -16,16 +16,18 @@
 #include<surfIO.h>
 #include<correspondence.h>
 #include<tile.h>
+#include<volumeIO.h>
 
 /** filename vars **/
-static char
-slice_fname[255] = "",
+static char slice_fname[255] = "",
   slicelab_fname[255] = "",
   surf_fname[255]  = "",
+  transformvolume_fname[255]  = "",
   executeName[255] = "";
 
 /** save option for corresponded slices **/
 static int saveSlices = 0;
+static int embeddedLabels = 0;
 static int onlyCorrespond = 0;
 static int dontCorrespond = 0;
 static int manualThreshold = 0;
@@ -127,7 +129,10 @@ void printUsage(void) {
   //fprintf(stdout, "  -#, --skipslices          skip every #th slice in recon\n");
   fprintf(stdout, "  -F, --nofillholes\t\tdont fill holes after tiling\n");
   //  fprintf(stdout, "  -H, --numholes            number of holes to leave when filing\n");
+  fprintf(stdout, "  -L, --embedded labels\t\tslice labels are embedded in the slice file\n");
   fprintf(stdout, "  -l, --slicelabfile\t\tslice label filename\n");
+  fprintf(stdout, "  -v, --transformvolume\t\tuse the vox2ras in the specified volume to map to world coordinates\n");
+
 
   fprintf(stdout, "\nReport bugs to <oph@cns.bu.edu>.\n");
 
@@ -168,9 +173,11 @@ void parseArgs(int argc, char **argv) {
     {"intersectionmult",1, 0, 'I'},
     {"penalizerepeatededges", 1, 0, 'e'},
     {"repeatededgemult",1, 0, 'E'},
-    {"nofillholes",       1, 0, 'F'},
-//    {"numholes",        1, 0, 'H'},
-    {"slicelabfile",1, 0, 'l'},
+    {"nofillholes",     1, 0, 'F'},
+//    {"numholes",      1, 0, 'H'},
+    {"embeddedlabels",  0, 0, 'L'},
+    {"slicelabfile",    1, 0, 'l'},
+    {"transformvolume", 1, 0, 'v'},
     {"verbose",         0, 0, 'V'},
     {"help",            0, 0, 'h'},
     {0, 0, 0, 0}
@@ -178,7 +185,7 @@ void parseArgs(int argc, char **argv) {
 
   /* loop through input arguments */
   while(1) {
-    opt = getopt_long (argc, argv, "r:R:a:A:c:p:P:S:t:m:#:M:X:q:sd:D:i:I:e:E:gf:k:CTFH:l:hV?",
+    opt = getopt_long (argc, argv, "r:R:a:A:c:p:P:S:t:m:#:M:X:q:sd:D:i:I:e:E:gf:k:CTFH:Ll:v:hV?",
                        long_options, &option_index);
 
     if(opt == -1)
@@ -315,8 +322,14 @@ void parseArgs(int argc, char **argv) {
 //    case 'H':
 //      numHolesLeft = atoi(optarg);
 //      break;
+        case 'L':
+          embeddedLabels = 1;
+          break;
         case 'l':
           strcpy(slicelab_fname,optarg);
+          break;
+        case 'v':
+          strcpy(transformvolume_fname,optarg);
           break;
         case 'V':
           SR_VERBOSE = TRUE;
@@ -371,6 +384,7 @@ void parseArgs(int argc, char **argv) {
 int main(int argc, char **args) {
   list *slices;
   surface *surf;
+  volume *vol;
 
   /* turn on memory tracing, if defined */
 #ifdef MEMLEAK
@@ -382,8 +396,10 @@ int main(int argc, char **args) {
   strcpy(executeName,args[0]);
   parseArgs(argc,args);
 
+  fprintf(stdout, "reading slice contours\n");
+
   /* read the slices from the file */
-  slices = readSliceContours(slice_fname);
+  slices = readSliceContours(slice_fname, embeddedLabels);
   if(slices == NULL) {
     return 0;
   }
@@ -392,10 +408,13 @@ int main(int argc, char **args) {
     readSliceContourLabels(slices,slicelab_fname);
   }
 
+  fprintf(stdout, "preprocessing\n");
+
   preprocessSliceContours(slices);
 
   /* builds a guess at contour correspondence */
   if(!dontCorrespond) {
+    fprintf(stdout, "corresponding\n");
     buildCorrespondenceGuess(slices);
   }
   else if(manualThreshold) {
@@ -403,7 +422,7 @@ int main(int argc, char **args) {
   }
 
   if(saveSlices) {
-    writeSliceContours(slices,"reconSliceSave.slc");
+    writeSliceContours(slices,embeddedLabels,"reconSliceSave.slc");
   }
 
   if(onlyCorrespond) {
@@ -411,11 +430,13 @@ int main(int argc, char **args) {
   }
 
   /* tile the slices */
+  fprintf(stdout, "tiling\n");
   surf = tileSlices(slices);
   deleteSliceContours(slices);
 
   /* fill holes, if desired */
   if(doFillHoles) {
+    fprintf(stdout, "filling holes\n");
     fillBranchedHoles(surf);
   }
 
@@ -427,10 +448,17 @@ int main(int argc, char **args) {
     fprintf(stdout,"surface is not manifold\n");
   }
 
+  if (strcmp(transformvolume_fname, "")) {
+    fprintf(stdout, "transforming\n");
+    vol = loadVolume(transformvolume_fname, MGH);
+    transformSurfaceVertices(surf,vol->vox2wrld);
+  }
+
   /* write the surface file */
+  fprintf(stdout, "saving\n");
   writeOFF(surf,surf_fname);
 
-  if(strcmp(slicelab_fname,"")) {
+  if(strcmp(slicelab_fname,"") || embeddedLabels) {
     strcpy(strrchr(surf_fname,'.'),".lab");
     writeLabelFile(surf,surf_fname);
   }

@@ -74,7 +74,7 @@ dataset *newDatasetContourFile(char *filename, char *sliceFilename) {
   vertex *v;
   double w,h;
 
-  slices = readSliceContours(sliceFilename);
+  slices = readSliceContours(sliceFilename, 0);
   if(slices == NULL) {
     fprintf(stderr,
             "newDatasetSliceContourFile: error loading slice contours\n");

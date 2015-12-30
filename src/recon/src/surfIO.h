@@ -1,9 +1,9 @@
 /*****************************************************************************
  * surfIO.h is the header file for surface input/output functions for
- * libsr 
+ * libsr
  * Oliver Hinds <oph@bu.edu> 2005-06-22
  *
- * 
+ *
  *
  *****************************************************************************/
 
@@ -29,7 +29,7 @@ surface *readSurface(char *filename, enum SURFACE_FORMAT format);
 int writeSurface(surface *surf, char *filename, enum SURFACE_FORMAT format);
 
 /**
- * reads a surface from an off file 
+ * reads a surface from an off file
  * returns a surface structure or null if reading flibvps
  */
 surface *readOFF(char* filename);
@@ -41,7 +41,7 @@ surface *readOFF(char* filename);
 int writeOFF(surface *surf, char *filename);
 
 /**
- * reads a surface from an obj file 
+ * reads a surface from an obj file
  * returns a surface structure or null if reading flibvps
  */
 surface *readOBJ(char* filename);
@@ -114,12 +114,12 @@ int writeMGHCurvatureFile(surface *surf, char *filename);
 /**
  * read a set of slice contours from a file
  */
-list *readSliceContours(char *filename);
+list *readSliceContours(char *filename, int label_embedded);
 
 /**
  * write a set of slice contours to a file
  */
-int writeSliceContours(list *slices, char *filename);
+int writeSliceContours(list *slices, int embed_labels, char *filename);
 
 /**
  * delete a list of slice contours
@@ -143,7 +143,7 @@ list *readNuagesSlices(char *filename);
 
 /**
  * looks for a valid surface format name in a string,
- * returns both the format 
+ * returns both the format
  */
 int getSurfFormatFromString(char *str, enum SURFACE_FORMAT *format);
 

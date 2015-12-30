@@ -515,11 +515,11 @@ void surfAction(int act) {
         prepareDatasetForSave(curDataset);
         sprintf(filename,"%s.slices",curDataset->filename);
         slices = buildSlices(curDataset);
-        writeSliceContours(slices,filename);
+        writeSliceContours(slices, 0, filename);
 
         if(curDataset->hasLabels == 1) {
           sprintf(filename,"%s.slices.lab",curDataset->filename);
-          writeSliceContourLabels(slices,filename);
+          writeSliceContourLabels(slices, filename);
         }
         deleteSliceContours(slices);
         redisplay();
