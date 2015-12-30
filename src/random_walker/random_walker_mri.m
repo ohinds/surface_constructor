@@ -61,14 +61,16 @@ function random_walker_mri(vol_fname, dataset_fname, seg_fname, slices)
   end
 
   % add the tack seeds
-  %slices = s2(1, 3):s2(end, 3);
-  st(find(st(:, 3) < slices(1)), :) = [];
-  st(find(st(:, 3) > slices(end)), :) = [];
-  for i=1:size(st,1)
-    if (size(s1, 1) ~= 0 && sum(ismember(s1, st(i, :), 'rows')))
-       continue
-    end
-    s1(end+1, :) = st(i, :);
+  if length(st) > 0
+      %slices = s2(1, 3):s2(end, 3);
+      st(find(st(:, 3) < slices(1)), :) = [];
+      st(find(st(:, 3) > slices(end)), :) = [];
+      for i=1:size(st,1)
+          if (size(s1, 1) ~= 0 && sum(ismember(s1, st(i, :), 'rows')))
+              continue
+          end
+          s1(end+1, :) = st(i, :);
+      end
   end
 
   % crop the volume
