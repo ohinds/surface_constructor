@@ -1,7 +1,7 @@
 ############################################################################
 # Makefile for the CVCNS reconFromSlices application
 # Oliver Hinds <oph@bu.edu> 2004-02-04
-# 
+#
 #######################################################################
 
 ################################ VARS ################################
@@ -18,7 +18,7 @@ export MEMLEAK = 0
 
 export OS = linux
 
-# directories 
+# directories
 export BIN_DIR = $(PWD)
 export BIN_DEST_DIR = /usr/local/bin
 
@@ -54,6 +54,7 @@ ifeq ($(MEMLEAK),1)
 endif
 
 # params for static compilation of libs
+SR_LIB_TYPE = static
 ifeq ($(OS),win)
 	SR_LIB_TYPE = static
 endif
@@ -61,7 +62,7 @@ ifeq ($(OS),mac)
 	SR_LIB_TYPE = static
 endif
 ifeq ($(SR_LIB_TYPE),static)
-	LIBSR_LIB_DIR = /usr/local/lib
+	LIBSR_LIB_DIR = ../lib
 	LIBSR = $(LIBSR_LIB_DIR)/libsr.a
 else
 	LIBSR = -lsr
@@ -73,28 +74,31 @@ endif
 ifeq ($(OS),mac)
 	VP_LIB_TYPE = static
 endif
+
+VP_LIB_TYPE = static
 ifeq ($(VP_LIB_TYPE),static)
-	LIBVP_LIB_DIR = /usr/local/lib
+	LIBVP_LIB_DIR = ../../vol/lib
 	LIBVP = $(LIBVP_LIB_DIR)/libvp.a
 else
 	LIBVP = -lvp
 endif
 
 # flags for the compiler and linker
-export CFLAGS = -Werror -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG) 
-export LDFLAGS = $(PROF_FLAG) $(LIBSR)  $(LIBVP) -lm -lgsl -lgslcblas -lz -lglut
+CINCL = -I../src -I ../../vol/src -I ../../vol/src/dicom
+export CFLAGS = $(CINCL) -Werror -Wall $(MEMLEAK_FLAG) $(PROF_FLAG) $(DEBUG_FLAG) $(OPTIM_FLAG) $(STRIP_FLAG)
+export LDFLAGS = $(PROF_FLAG) $(LIBSR)  $(LIBVP) -lm -lgsl -lgslcblas -lz -lglut -ljpeg
 
 SRC_FILES = $(wildcard *.c) $(wildcard *.h)
 
 ############################## TARGETS ###############################
 all: $(PROJECT)
 
-debug: 
+debug:
 	$(MAKE) DEBUG=1 OPTIM=0 STRIP=0 $(PROJECT)
 
 $(PROJECT): $(SRC_FILES)
 	gcc -c $(CFLAGS) $@.c
-	gcc  -o $(BIN_DIR)/$@ $@.o $(LDFLAGS) $(CFLAGS) 
+	gcc  -o $(BIN_DIR)/$@ $@.o $(LDFLAGS) $(CFLAGS)
 
 install: $(PROJECT)
 	@$(ECHO) 'make: installing $(PROJECT) for $(OS)...'
@@ -115,4 +119,4 @@ clean:
 ### mode: makefile
 ### fill-column: 76
 ### comment-column: 0
-### End: 
+### End:
