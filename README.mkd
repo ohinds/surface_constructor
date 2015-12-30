@@ -21,7 +21,7 @@ If you publish work that includes results obtained using this software, please c
 Hinds, O. P., Polimeni, J. R., Schwartz, E. L., 2006.
 Brain surface reconstruction from slice contours [Abstract]. NeuroImage 31 (1), S445.
 
-Platform: Linux, Windows, Mac (not recommended)
+Platform: Linux, Windows, Mac
 
 Language: C
 
