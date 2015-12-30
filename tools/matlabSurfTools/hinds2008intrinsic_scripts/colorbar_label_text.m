@@ -3,7 +3,7 @@ function varargout = colorbar_label_text(varargin)
 %
 % COLORBAR_LABEL_TEXT(FIG, FORMAT)
 %
-% (assumes that colorbar is vertically oriented and located on right of figure)  
+% (assumes that colorbar is vertically oriented and located on right of figure)
 %
 %
 % example:
@@ -29,39 +29,43 @@ function varargout = colorbar_label_text(varargin)
   if ( nargin >= 2 ),
     format = varargin{2};
   else,
-    format = '%0.1d^\circ';    
+    format = '%0.1d^\circ';
   end;
-  
+
   h = [];
 
-  
+
   % find handle for colorbar
   cba = findall(fig, 'Tag', 'Colorbar');
 
   if ( isempty(cba) ),
     errstr = 'figure contains no colorbar!';
-    error('\n!!! [%s]: %s', mfilename, errstr);    
+    error('\n!!! [%s]: %s', mfilename, errstr);
   end;
-  
-  
+
+
   YTick      = get(cba, 'YTick');
   YTickLabel = get(cba, 'YTickLabel');
   FontSize   = get(cba, 'FontSize');
 
 
-  
+
   if ( ~isempty(YTickLabel) ),
 
     % set label to blank so function will return if called twice on same colorbar
     set(cba, 'YTickLabel', '');
-    
-    %     YTickLabel = {regexprep(YTickLabel, '\s\D.*', '')};
-    
-    YTickValues = str2num(YTickLabel);
+
+    YTickLabel = {regexprep(YTickLabel, '\s\D.*', '')};
+
+
+    YTickValues = [];
+    for i=1:length(YTickLabel{1})
+      YTickValues(i) = str2num(YTickLabel{1}{i});
+    end
 
     % nudge zero values epsilon over to the positive axis
     YTickValues(find(YTickValues == 0)) = abs(sqrt(eps));
-    
+
     for ind = 1:size(YTickLabel,1),
       LabelCell{ind} = sprintf(format, YTickValues(ind));
     end;
@@ -81,7 +85,7 @@ function varargout = colorbar_label_text(varargin)
 
     % generate text boxes
     h = text(X, YTick, YTickLabelText, 'Parent', cba, 'FontSize', FontSize, ...
-	     'HorizontalAlignment', 'right');
+             'HorizontalAlignment', 'right');
 
     % find widths chosen for text boxes
     extent = cell2mat(get(h, 'Extent'));
@@ -95,7 +99,7 @@ function varargout = colorbar_label_text(varargin)
       pos = get(h(ind), 'Position');
       set(h(ind), 'Position', [pos(1) + width*1.01, pos(2)]);
     end;
-    
+
   else,
     errstr = 'colorbar tick labels are empty';
     error('\n!!! [%s]: %s', mfilename, errstr);

@@ -60,6 +60,8 @@ function [maps boundary_mask] ...
     v = flatSurfs{s}.vertices;
     bv = flatSurfs{s}.vertices(boundaryVertices(flatSurfs{s}),:);
 
+    fprintf('computing on sample %d\n', s);
+
     % get the cdata for this sample
     cd = {};
     for(m=1:num_maps)
@@ -69,15 +71,19 @@ function [maps boundary_mask] ...
     % index each vertex into a pixel
     for(ind=1:size(v,1))
       i = floor((spatial_samples-1)/(2*rect_size)*v(ind,2)...
-		+(spatial_samples/2+1));
+                            +(spatial_samples/2+1));
       j = floor((spatial_samples-1)/(2*rect_size)*v(ind,1)...
-		+(spatial_samples/2+1));
+                            +(spatial_samples/2+1));
+
+      if i < 1 | i > size(indiv_count, 1) | j < 1 | j > size(indiv_count, 2)
+         continue
+      end
 
       indiv_count(i,j) = indiv_count(i,j)+1;
 
       % accumulate cdata for each map
       for(m=1:num_maps)
-	indiv_maps{m}{s}.raw{i,j}(end+1) = cd{m}(ind);
+        indiv_maps{m}{s}.raw{i,j}(end+1) = cd{m}(ind);
       end
     end
 
@@ -100,13 +106,13 @@ function [maps boundary_mask] ...
       d = d(2:4,1)./sum(d(2:4,1));
 
       indiv_count(zero_votes_r(are_in_surf(ind)),...
-		zero_votes_c(are_in_surf(ind))) = 1;
+                  zero_votes_c(are_in_surf(ind))) = 1;
 
       % for each map
       for(m=1:num_maps)
-	indiv_maps{m}{s}.raw{zero_votes_r(are_in_surf(ind)),...
-		     zero_votes_c(are_in_surf(ind))} = ...
-	    cd{m}(flatSurfs{s}.faces(f,:))'*d;
+        indiv_maps{m}{s}.raw{zero_votes_r(are_in_surf(ind)),...
+                             zero_votes_c(are_in_surf(ind))} = ...
+        cd{m}(flatSurfs{s}.faces(f,:))'*d;
       end
     end
 
@@ -118,28 +124,28 @@ function [maps boundary_mask] ...
     % build individual mean, median and variance maps
     for(m=1:num_maps)
       for(i=1:spatial_samples)
-	for(j=1:spatial_samples)
-	  if(isempty(indiv_maps{m}{s}.raw{i,j}))
-	    indiv_maps{m}{s}.meanmap(i,j) = 0;
-	    indiv_maps{m}{s}.medianmap(i,j) = 0;
-	    indiv_maps{m}{s}.meansdmap(i,j) = 0;
-	    indiv_maps{m}{s}.meanradmap(i,j) = 0;
-	  else
-	    indiv_maps{m}{s}.meanmap(i,j) = mean(indiv_maps{m}{s}.raw{i,j});
-	    indiv_maps{m}{s}.medianmap(i,j) = median(indiv_maps{m}{s}.raw{i,j});
-	    indiv_maps{m}{s}.meansdmap(i,j) = sqrt(var(indiv_maps{m}{s}.raw{i,j}));
+        for(j=1:spatial_samples)
+          if(isempty(indiv_maps{m}{s}.raw{i,j}))
+            indiv_maps{m}{s}.meanmap(i,j) = 0;
+            indiv_maps{m}{s}.medianmap(i,j) = 0;
+            indiv_maps{m}{s}.meansdmap(i,j) = 0;
+            indiv_maps{m}{s}.meanradmap(i,j) = 0;
+          else
+            indiv_maps{m}{s}.meanmap(i,j) = mean(indiv_maps{m}{s}.raw{i,j});
+            indiv_maps{m}{s}.medianmap(i,j) = median(indiv_maps{m}{s}.raw{i,j});
+            indiv_maps{m}{s}.meansdmap(i,j) = sqrt(var(indiv_maps{m}{s}.raw{i,j}));
 
-	    rad_curv = indiv_maps{m}{s}.raw{i,j};
-	    rad_curv(find(rad_curv == 0)) = eps;
-	    rad_curv = 1./rad_curv;
-	    
-	    indiv_maps{m}{s}.meanradmap(i,j) = mean(rad_curv);
-	  end
-	end
+            rad_curv = indiv_maps{m}{s}.raw{i,j};
+            rad_curv(find(rad_curv == 0)) = eps;
+            rad_curv = 1./rad_curv;
+
+            indiv_maps{m}{s}.meanradmap(i,j) = mean(rad_curv);
+          end
+        end
       end
     end
   end
-  
+
   % eliminate pixels with less than all votes
   count = sum(count,3);
   boundary_mask(find(count==num_samples))=1;
@@ -156,7 +162,7 @@ function [maps boundary_mask] ...
       maps{m}.meanradmap = maps{m}.meanradmap + indiv_maps{m}{s}.meanradmap;
       sdradtmpmap(:,:,s) = indiv_maps{m}{s}.meanradmap;
     end
-    
+
     % apply the boundary masks
     maps{m}.meanmap = maps{m}.meanmap./num_samples;
     maps{m}.meanmap(find(boundary_mask~=1)) = 0;
@@ -166,13 +172,13 @@ function [maps boundary_mask] ...
 
     maps{m}.meansdmap = maps{m}.meansdmap./num_samples;
     maps{m}.meansdmap(find(boundary_mask~=1)) = 0;
-    
+
     maps{m}.sdmeanmap = sqrt(var(sdtmpmap,0,3));
     maps{m}.sdmeanmap(find(boundary_mask~=1)) = 0;
 
     maps{m}.meanradmap = maps{m}.meanradmap./num_samples;
     maps{m}.meanradmap(find(boundary_mask~=1)) = 0;
-  
+
     maps{m}.sdmeanradmap = sqrt(var(sdradtmpmap,0,3));
     maps{m}.sdmeanradmap(find(boundary_mask~=1)) = 0;
   end
@@ -183,7 +189,7 @@ function f = findFaceContainingPoint(flatSurf,p)
   found = 0;
   for(f=1:size(flatSurf.faces,1))
     if(inpolygon(p(1),p(2),flatSurf.vertices(flatSurf.faces(f,:),1),...
-		 flatSurf.vertices(flatSurf.faces(f,:),2)))
+                 flatSurf.vertices(flatSurf.faces(f,:),2)))
       found = 1;
       break;
     end
@@ -191,11 +197,11 @@ function f = findFaceContainingPoint(flatSurf,p)
 
   if(found == 0)
     fprintf(['findFaceContainingPoint coulnt find a face containing' ...
-	     ' the point\n']);
+                                                                     ' the point\n']);
     keyboard
     f = -1;
   end
-return
+  return
 
 %************************************************************************%
 %%% $Source: /home/cvs/WRITINGS/ARTICLES/EX_VIVO_STRIA/MATLAB/computeAverageMap.m,v $

@@ -33,7 +33,7 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
     showVertexCurvature = 0;
 
     vertexFaceColor = zeros(surfStruct.V, 1);
-    if(nargin < 5)
+    if(nargin < 6)
       vcinds = 1:surfStruct.V;
     end
     vertexFaceColor(vcinds) = vcdata;

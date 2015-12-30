@@ -48,8 +48,6 @@ function [tx, ty, r, a, b, alpha, k] = fitWedgeDipoleBoundary(subjs_dir, subj, h
   visual_perimeter = visualPerimeter();
   dipole_boundary = wedgedipole(visual_perimeter, 0.6, 80, 0.8, 1, 1, k0, r0);
 
-  keyboard
-
   t0 = occCoord(1) - real(dipole_boundary(1)) + i * occCoord(2) - imag(dipole_boundary(1));
   dipole_boundary = dipole_boundary + t0;
 

@@ -54,7 +54,10 @@ def write_ds(ds, filename):
             f.write('begin slice markers\n')
             f.write('end\n\n')
 
-        f.write('preferences:\n\n')
+        f.write('\nnum vertices: 0\n\n')
+        f.write('num faces: 0\n\n')
+
+        f.write('\npreferences:\n\n')
 
         for key in ['window size',
                     'curslice',
