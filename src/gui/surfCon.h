@@ -173,6 +173,11 @@ void CALLBACK error(GLenum errCode);
 void changeSlice(int dir);
 
 /**
+ * Go to a particular slice
+ */
+void gotoSlice(int slice);
+
+/**
  * gets the display width
  */
 int getDisplayWidth();

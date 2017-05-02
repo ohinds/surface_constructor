@@ -873,6 +873,16 @@ void changeSlice(int dir) {
 }
 
 /**
+ * go to a particular slice
+ */
+void gotoSlice(int slice) {
+  curSlice = slice;
+  modeUninit();
+  modeInit();
+  redisplay();
+}
+
+/**
  * gets the display width
  */
 int getDisplayWidth() {

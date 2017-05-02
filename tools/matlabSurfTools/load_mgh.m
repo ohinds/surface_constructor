@@ -2,7 +2,7 @@ function [vol, M, mr_parms, volsz] = load_mgh(fname,slices,frames,headeronly)
 % [vol, M, mr_parms, Mdc, volsz] = load_mgh(fname,<slices>,<frames>,<headeronly>)
 %
 % fname - path of the mgh file
-% 
+%
 % slices - list of one-based slice numbers to load. All
 %   slices are loaded if slices is not specified, or
 %   if slices is empty, or if slices(1) <= 0.
@@ -35,7 +35,7 @@ if(nargin < 1 | nargin > 4)
   return;
 end
 
-% unzip if it is compressed 
+% unzip if it is compressed
 if (strcmpi(fname((length(fname)-3):length(fname)), '.MGZ') | ...
 		strcmpi(fname((length(fname)-3):length(fname)), '.GZ'))
 	gzipped =  round(rand(1)*10000000);
@@ -63,13 +63,13 @@ if(fid == -1)
   fprintf('ERROR: could not open %s for reading\n',fname);
   return;
 end
-v       = fread(fid, 1, 'int') ; 
-ndim1   = fread(fid, 1, 'int') ; 
-ndim2   = fread(fid, 1, 'int') ; 
-ndim3   = fread(fid, 1, 'int') ; 
+v       = fread(fid, 1, 'int') ;
+ndim1   = fread(fid, 1, 'int') ;
+ndim2   = fread(fid, 1, 'int') ;
+ndim3   = fread(fid, 1, 'int') ;
 nframes = fread(fid, 1, 'int') ;
-type    = fread(fid, 1, 'int') ; 
-dof     = fread(fid, 1, 'int') ; 
+type    = fread(fid, 1, 'int') ;
+dof     = fread(fid, 1, 'int') ;
 
 if(slices(1) > 0)
   ind = find(slices > ndim3);
@@ -91,12 +91,12 @@ UNUSED_SPACE_SIZE= 256;
 USED_SPACE_SIZE = (3*4+4*3*4);  % space for ras transform
 
 unused_space_size = UNUSED_SPACE_SIZE-2 ;
-ras_good_flag = fread(fid, 1, 'short') ; 
+ras_good_flag = fread(fid, 1, 'short') ;
 if (ras_good_flag)
-  delta  = fread(fid, 3, 'float32') ; 
-  Mdc    = fread(fid, 9, 'float32') ; 
+  delta  = fread(fid, 3, 'float32') ;
+  Mdc    = fread(fid, 9, 'float32') ;
   Mdc    = reshape(Mdc,[3 3]);
-  Pxyz_c = fread(fid, 3, 'float32') ; 
+  Pxyz_c = fread(fid, 3, 'float32') ;
 
   D = diag(delta);
 
@@ -112,7 +112,7 @@ if (ras_good_flag)
 end
 
 fseek(fid, unused_space_size, 'cof') ;
-nv = ndim1 * ndim2 * ndim3 * nframes;  
+nv = ndim1 * ndim2 * ndim3 * nframes;
 volsz = [ndim1 ndim2 ndim3 nframes];
 
 MRI_UCHAR =  0 ;
@@ -138,7 +138,7 @@ if(headeronly)
   fseek(fid,nv*nbytespervox,'cof');
   if(~feof(fid))
     [mr_parms count] = fread(fid,4,'float32');
-    if(count ~= 4) 
+    if(count ~= 4)
       fprintf('WARNING: error reading MR params\n');
     end
   end
@@ -152,24 +152,24 @@ end
 if(slices(1) <= 0 & frames(1) <= 0)
   switch type
    case MRI_FLOAT,
-    vol = fread(fid, nv, 'float32') ; 
+    vol = fread(fid, nv, 'float32') ;
    case MRI_UCHAR,
-    vol = fread(fid, nv, 'uchar') ; 
+    vol = fread(fid, nv, 'uchar') ;
    case MRI_SHORT,
-    vol = fread(fid, nv, 'short') ; 
+    vol = fread(fid, nv, 'short') ;
    case MRI_INT,
-    vol = fread(fid, nv, 'int') ; 
+    vol = fread(fid, nv, 'int') ;
   end
 
   if(~feof(fid))
     [mr_parms count] = fread(fid,4,'float32');
-    if(count ~= 4) 
+    if(count ~= 4)
       fprintf('WARNING: error reading MR params\n');
     end
   end
   fclose(fid) ;
   if(gzipped >=0)  unix(sprintf('rm %s', fname));  end
-  
+
   nread = prod(size(vol));
   if(nread ~= nv)
     fprintf('ERROR: tried to read %d, actually read %d\n',nv,nread);
@@ -198,16 +198,16 @@ for frame = frames
   for slice = slices
     filepos = ((frame-1)*nvvol + (slice-1)*nvslice)*nbytespervox + filepos0;
     fseek(fid,filepos,'bof');
-    
+
     switch type
      case MRI_FLOAT,
-      [tmpslice nread]  = fread(fid, nvslice, 'float32') ; 
+      [tmpslice nread]  = fread(fid, nvslice, 'float32') ;
      case MRI_UCHAR,
-      [tmpslice nread]  = fread(fid, nvslice, 'uchar') ; 
+      [tmpslice nread]  = fread(fid, nvslice, 'uchar') ;
      case MRI_SHORT,
-      [tmpslice nread]  = fread(fid, nvslice, 'short') ; 
+      [tmpslice nread]  = fread(fid, nvslice, 'short') ;
      case MRI_INT,
-      [tmpslice nread]  = fread(fid, nvslice, 'int') ; 
+      [tmpslice nread]  = fread(fid, nvslice, 'int') ;
     end
 
     if(nread ~= nvslice)
@@ -231,7 +231,7 @@ fseek(fid,filepos,'bof');
 
 if(~feof(fid))
   [mr_parms count] = fread(fid,5,'float32');
-  if(count < 4) 
+  if(count < 4)
     fprintf('WARNING: error reading MR params\n');
   end
 end

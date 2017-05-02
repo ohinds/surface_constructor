@@ -54,7 +54,7 @@ function h = showSurf(surfStruct,showVertexCurvature,showFaceCurvature,showLabel
     end
 
     if(isempty(vertexFaceColor))
-      vertexFaceColor = repmat([0.6,0.6,0.6],size(surfStruct.faces,1),1);
+      vertexFaceColor = repmat([0.5,0.5,0.5],size(surfStruct.faces,1),1);
     else
       vertexFaceColor(find(vertexFaceColor == 1)) = 0.7;
       vertexFaceColor(find(vertexFaceColor == -1)) = 0.4;

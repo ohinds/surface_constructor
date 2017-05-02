@@ -1,6 +1,6 @@
 % top level script to execute 3D volume segmentation based on Surface
 % Constructor determined seeds.
-function random_walker_mri(vol_fname, dataset_fname, seg_fname, slices)
+function random_walker_mri(vol_fname, dataset_fname, seg_fname, prob_fname, slices)
 
   dbstop if error
 
@@ -8,7 +8,7 @@ function random_walker_mri(vol_fname, dataset_fname, seg_fname, slices)
   [vol M] = load_mgh(vol_fname);
 
   if (nargin < 4)
-     slices = 1:size(vol, 3)
+     slices = 1:size(vol, 3);
   end
 
   % read seeds from the dataset file
@@ -89,10 +89,10 @@ function random_walker_mri(vol_fname, dataset_fname, seg_fname, slices)
           X*Y*Z, X, Y, Z, size(s1, 1), size(s2, 1));
 
   % run segmentation
-  mask = random_walker_3d(...
-             img, [sub2ind([X Y Z], s1(:, 2), s1(:, 1), s1(:, 3)); ...
-                   sub2ind([X Y Z], s2(:, 2), s2(:, 1), s2(:, 3))], ...
-             [ones(1, size(s1, 1)), 2 * ones(1, size(s2, 1))]);
+  [mask prob] = random_walker_3d(...
+      img, [sub2ind([X Y Z], s1(:, 2), s1(:, 1), s1(:, 3)); ...
+            sub2ind([X Y Z], s2(:, 2), s2(:, 1), s2(:, 3))], ...
+      [ones(1, size(s1, 1)), 2 * ones(1, size(s2, 1))]);
 
 
   if (exist(seg_fname, 'file'))
@@ -102,4 +102,13 @@ function random_walker_mri(vol_fname, dataset_fname, seg_fname, slices)
   end
   seg_vol(bounds{1}, bounds{2}, bounds{3}) = permute(mask, [2 1 3]);
   save_mgh(seg_vol, seg_fname, M);
+
+  if (exist(prob_fname, 'file'))
+     prob_vol = load_mgh(prob_fname);
+  else
+    prob_vol = zeros(size(vol));
+  end
+  prob_vol(bounds{1}, bounds{2}, bounds{3}) = permute(prob(:,:,:,1), [2 1 3]);
+  save_mgh_format(prob_vol, prob_fname, M, [], 3);
+
 end

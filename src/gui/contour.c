@@ -142,6 +142,10 @@ void contourInit() {
     firstRun = FALSE;
   }
 
+  if (imgBuf == NULL) {
+    contourImgInit();
+  }
+
   /* find the placement of the image (square and centered) */
   imgBounds.v1.x = 0;
   imgBounds.v1.y = 0;

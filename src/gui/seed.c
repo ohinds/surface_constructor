@@ -47,6 +47,8 @@ static pixelLocation *clearPathStart = NULL;
  * functions
  ******************************************************/
 
+void addSeed(int foreground, vector mousePos, int localBrushRadius);
+
 /****** LOCALLY USED FUNCTIONS ********/
 int subToInd2D(int row, int col, image *img) {
   return row + col * img->width;
@@ -65,6 +67,11 @@ void clearSeedPixels(image *seedImg) {
       }
     }
   }
+}
+
+void deleteAllSeeds() {
+  clearSeedPixels(fgSeeds);
+  clearSeedPixels(bgSeeds);
 }
 
 void assignSeedPixels(list *seedList, int colorDim, image *seedImg) {
@@ -150,7 +157,7 @@ void buildSegTex(image *segImage) {
         segTexImage->pixels[subToInd3D(row, col, 1, segTexImage)] = USHRT_MAX;
         segTexImage->pixels[subToInd3D(row, col, 2, segTexImage)] = 0;
         segTexImage->pixels[subToInd3D(row, col, 3, segTexImage)] =
-          0.1 * USHRT_MAX;
+          0.5 * USHRT_MAX;
       }
       else {
         for (chan = 0; chan < 4; chan++) {
@@ -511,13 +518,16 @@ void seedDraw() {
   strcat(modeString,":");
 }
 
-void runSegmentation() {
+void runSegmentation(int local) {
   char command[MAX_STR_LEN * 2];
   char seg_filename[MAX_STR_LEN];
+  char prob_filename[MAX_STR_LEN];
 
   strcpy(seg_filename, curDataset->vol->filename);
-  // TODO: hack, fixme
   strcpy(&seg_filename[strlen(seg_filename) - 4], "_seg.mgh");
+
+  strcpy(prob_filename, curDataset->vol->filename);
+  strcpy(&prob_filename[strlen(prob_filename) - 4], "_prob.mgh");
 
   if (getenv("SURFACE_CONSTRUCTOR_HOME") == NULL) {
     fprintf(stderr, "ERROR: the env var SURFACE_CONSTRUCTOR_HOME must "
@@ -525,17 +535,36 @@ void runSegmentation() {
     return;
   }
 
-  sprintf(command, "matlab -nosplash -nodisplay -r \"addpath(genpath('%s')); "
-          "random_walker_mri('%s', '%s', '%s', %d:%d); exit\"",
-          "$SURFACE_CONSTRUCTOR_HOME",
-          curDataset->vol->filename, curDataset->filename, seg_filename,
-          curSlice - 4, curSlice + 6);
+  if (local) {
+    sprintf(command, "matlab -nosplash -nodisplay -r \"addpath(genpath('%s')); "
+            "random_walker_mri('%s', '%s', '%s', '%s', %d:%d); exit\"",
+            "$SURFACE_CONSTRUCTOR_HOME",
+            curDataset->vol->filename, curDataset->filename, seg_filename,
+            prob_filename, curSlice - 4, curSlice + 6);
 
-  fprintf(stdout, "%s\n", command);
+    fprintf(stdout, "%s\n", command);
 
-  fprintf(stdout, "running segmentation...\n");
-  int ret = system(command);
-  fprintf(stdout, "done with segmentation, returned %d\n", ret);
+    fprintf(stdout, "running segmentation...\n");
+    int ret = system(command);
+    fprintf(stdout, "done with segmentation, returned %d\n", ret);
+  }
+  else {
+    int slice = 0;
+    for (slice = 5; slice < curDataset->vol->size[SLICE] - 1; slice += 5) {
+      sprintf(command, "matlab -nosplash -nodisplay -r \"addpath(genpath('%s')); "
+              "random_walker_mri('%s', '%s', '%s', '%s', %d:%d); exit\"",
+              "$SURFACE_CONSTRUCTOR_HOME",
+              curDataset->vol->filename, curDataset->filename, seg_filename,
+              prob_filename, slice - 5 + 1,
+              min(slice + 5, curDataset->vol->size[SLICE]) + 1);
+
+      fprintf(stdout, "%s\n", command);
+
+      fprintf(stdout, "running segmentation...\n");
+      int ret = system(command);
+      fprintf(stdout, "done with segmentation, returned %d\n", ret);
+    }
+  }
 
   if (curDataset->seg != NULL) {
     freeVolume(curDataset->seg);
@@ -544,6 +573,77 @@ void runSegmentation() {
   curDataset->seg = loadMGHVolume(seg_filename);
   fprintf(stdout, "loaded: %s\n", curDataset->seg->filename);
   changeSlice(0);
+}
+
+// reads a file writen by the guess_seeds matlab function, and adds
+// the seeds to the current slice of the current dataset.
+void readSeedFile(const char* seed_file) {
+  vector seed_pos;
+
+  FILE* fp = fopen(seed_file, "r");
+  if (!fp) {
+    fprintf(stderr, "failed to open seed file for reading\n.");
+    return;
+  }
+
+  int slice = -1;
+  int fg = 1;
+  int oldSlice = curSlice;
+
+  while (1) {
+    char str[MAX_STR_LEN];
+    fscanf(fp, "%s", str);
+
+    if (feof(fp)) {
+      break;
+    }
+    else if(!strcmp(str, "slice")) {
+      fscanf(fp, "%d\n", &slice);
+      gotoSlice(slice);
+    }
+    else if(!strcmp(str, "fg")) {
+      fg = 1;
+    }
+    else if(!strcmp(str, "bg")) {
+      fg = 0;
+    }
+    else { // seed pixel
+      seed_pos.x = atoi(str);
+      fscanf(fp, "%lf", &seed_pos.y);
+
+      addSeed(fg, seed_pos, 1);
+    }
+  }
+
+  gotoSlice(oldSlice);
+
+  redisplay();
+}
+
+void guessSeeds() {
+  char command[MAX_STR_LEN * 2];
+  char seed_filename[MAX_STR_LEN];
+
+  strcpy(seed_filename, "/tmp/seeds.txt");
+
+  if (getenv("SURFACE_CONSTRUCTOR_HOME") == NULL) {
+    fprintf(stderr, "ERROR: the env var SURFACE_CONSTRUCTOR_HOME must "
+            "be set to run segmentation!\n");
+    return;
+  }
+
+  sprintf(command, "matlab -nosplash -nodisplay -r \"addpath(genpath('%s')); "
+          "guess_vol_seeds('%s', [], '%s'); exit\"",
+          "$SURFACE_CONSTRUCTOR_HOME",
+          curDataset->vol->filename, seed_filename);
+
+  fprintf(stdout, "%s\n", command);
+
+  fprintf(stdout, "guessing seeds...\n");
+  int ret = system(command);
+  fprintf(stdout, "done guessing seedsx, returned %d\n", ret);
+
+  readSeedFile(seed_filename);
 }
 
 /** event handlers **/
@@ -560,6 +660,10 @@ void seedAction(int action) {
         break;
       case 'w': /* toggle current slice seed display */
         showSeeds = !showSeeds;
+        redisplay();
+        break;
+      case 'd': /* delete all slice seeds */
+        deleteAllSeeds();
         redisplay();
         break;
       case 't': /* toggle segmentation volume */
@@ -583,23 +687,31 @@ void seedAction(int action) {
         brushRadius *= 2.f;
         break;
       case 'r':
-        runSegmentation();
+        runSegmentation(1);
+        break;
+      case 'R':
+        runSegmentation(0);
+        break;
+      case 'g':
+        guessSeeds();
         break;
       default:
         break;
   }
 }
 
-void addSeed(int foreground, vector mousePos) {
+void addSeed(int foreground, vector mousePos, int localBrushRadius) {
   int row;
   int col;
   int chan;
-  float sqBrushRadius = brushRadius * brushRadius;
+  float sqBrushRadius = localBrushRadius * localBrushRadius;
 
   image *img = foreground ? fgSeeds : bgSeeds;
 
-  for (row = mousePos.x - brushRadius; row <= mousePos.x + brushRadius; row++) {
-    for (col = mousePos.y - brushRadius; col <= mousePos.y + brushRadius;
+  for (row = mousePos.x - localBrushRadius;
+       row <= mousePos.x + localBrushRadius; row++) {
+    for (col = mousePos.y - localBrushRadius;
+         col <= mousePos.y + localBrushRadius;
          col++) {
       if (pow(row - mousePos.x, 2) + pow(col - mousePos.y, 2) > sqBrushRadius) {
         continue;
@@ -646,12 +758,15 @@ void removeSeed(int foreground, vector mousePos) {
 void createSeedMenu() {
   glutAddMenuEntry("-- Seed Specific Actions --",0);
   glutAddMenuEntry("'w' toggle seed visibility",'w');
+  glutAddMenuEntry("'d' delete slice seeds",'d');
   glutAddMenuEntry("'t' toggle segmentation visibility",'t');
   glutAddMenuEntry("'c' copy next slice's seeds to this slice",'c');
   glutAddMenuEntry("'v' copy previous slice's seeds to this slice",'v');
   glutAddMenuEntry("'=' increase brush size",'=');
   glutAddMenuEntry("'-' reduce brush size",'-');
-  glutAddMenuEntry("'r' run segmentation",'r');
+  glutAddMenuEntry("'r' run local segmentation",'r');
+  glutAddMenuEntry("'R' run global segmentation",'R');
+  glutAddMenuEntry("'g' guess seeds",'g');
 }
 
 /**
@@ -691,7 +806,7 @@ void mouseHandler(vector mousePos) {
   int fg = !controlDown;
 
   if(!shiftDown)  { /* add a new seed */
-    addSeed(fg, mousePos);
+    addSeed(fg, mousePos, brushRadius);
   }
   else { /* remove a seed */
     removeSeed(fg, mousePos);
